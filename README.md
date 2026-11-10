@@ -18,7 +18,7 @@ Create a care rep: `docker compose exec api python manage.py createsuperuser`
 
 ```bash
 cd apps/api && pip install -r requirements-dev.txt && pytest   # needs Postgres (see .env.example)
-cd apps/web && npm ci && npm test
+cd apps/web && pnpm install && pnpm test
 ```
 
 ## Scoring
