@@ -1,8 +1,5 @@
+import { QuestionnairePage } from "../features/feedback/components/QuestionnairePage";
+
 export default function Home() {
-  return (
-    <main>
-      <h1>How happy are you with our paint?</h1>
-      <p>Feedback form coming next.</p>
-    </main>
-  );
+  return <QuestionnairePage />;
 }

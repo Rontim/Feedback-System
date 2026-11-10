@@ -14,6 +14,14 @@ docker compose up --build
 
 Create a care rep: `docker compose exec api python manage.py createsuperuser`
 
+## Frontend (apps/web)
+
+Next.js App Router + Ant Design v5, styled only through `ConfigProvider` tokens (`app/theme.ts`).
+Questionnaire lives in `features/feedback/`: `Steps` + `Form`, one question per step, `Rate` with
+face icons, `Radio.Group` button style for customer type, `TextArea` with `showCount` for the
+optional comment, and an AntD `Result` on success. Form field names match the API payload.
+The browser only calls same-origin `/api/*`; Next rewrites it to Django (`API_URL`).
+
 ## Tests
 
 ```bash
