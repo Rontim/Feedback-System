@@ -55,8 +55,7 @@ class AfricasTalkingClient:
         return SANDBOX_URL if self.username == "sandbox" else LIVE_URL
 
     def send(self, recipients: list[str], message: str) -> list[SendResult]:
-        data = {"username": self.username, "to": ",".join(
-            recipients), "message": message}
+        data = {"username": self.username, "to": ",".join(recipients), "message": message}
         if self.sender_id:
             data["from"] = self.sender_id
         if len(recipients) > 1:
@@ -72,8 +71,7 @@ class AfricasTalkingClient:
             raise SmsGatewayError(f"{type(exc).__name__}: {exc}") from exc
 
         if response.status_code not in (200, 201):
-            raise SmsGatewayError(
-                f"Gateway returned HTTP {response.status_code}")
+            raise SmsGatewayError(f"Gateway returned HTTP {response.status_code}")
         try:
             rows = response.json()["SMSMessageData"]["Recipients"]
             return [
@@ -86,5 +84,4 @@ class AfricasTalkingClient:
                 for row in rows
             ]
         except (ValueError, KeyError, TypeError) as exc:
-            raise SmsGatewayError(
-                "Unexpected response from the SMS gateway") from exc
+            raise SmsGatewayError("Unexpected response from the SMS gateway") from exc

@@ -31,8 +31,7 @@ class InboundSmsView(APIView):
         payload = InboundSmsSerializer.from_gateway(request.data)
         payload.is_valid(raise_exception=True)
         data = payload.validated_data
-        outcome = handle_inbound(
-            sender=data["sender"], text=data["text"], message_id=data["id"])
+        outcome = handle_inbound(sender=data["sender"], text=data["text"], message_id=data["id"])
         return DRFResponse({"status": outcome})
 
 
