@@ -24,11 +24,12 @@ class Alert(models.Model):
     )
     email_error = models.CharField(max_length=500, blank=True)
     email_attempts = models.PositiveSmallIntegerField(default=0)
-    # SMS channel arrives with the Africa's Talking step; "skipped" until then.
+    # "skipped" when the SMS gateway is not configured or no care rep has a phone number.
     sms_status = models.CharField(
         max_length=7, choices=DeliveryStatus.choices, default=DeliveryStatus.SKIPPED
     )
     sms_error = models.CharField(max_length=500, blank=True)
+    sms_attempts = models.PositiveSmallIntegerField(default=0)
     read_at = models.DateTimeField(null=True, blank=True)
     handled_at = models.DateTimeField(null=True, blank=True)
     handled_by = models.ForeignKey(

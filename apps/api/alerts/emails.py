@@ -27,7 +27,7 @@ def build_alert_email(alert: Alert, recipients: list[str]) -> EmailMessage:
         f"Email:    {customer.email or '(not provided)'}",
         f"Phone:    {customer.phone}",
         f"Type:     {customer.get_type_display()}",
-        f"Channel:  {response.get_channel_display()}",
+        f"Channel:  {response.channel.upper()}",
         f"Received: {response.created_at:%Y-%m-%d %H:%M} UTC",
         "",
         "Scores (1-5)",

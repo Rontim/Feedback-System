@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, errorDetail, http } from "./http";
+import { ApiError, errorDetail, firstFieldError, http } from "./http";
 
 function fakeResponse(status: number, body: unknown): Response {
   return { ok: status >= 200 && status < 300, status, json: async () => body } as unknown as Response;
@@ -64,5 +64,17 @@ describe("http", () => {
 
   it("errorDetail falls back for unknown errors", () => {
     expect(errorDetail(new Error("boom"), "fallback")).toBe("fallback");
+  });
+});
+
+describe("firstFieldError", () => {
+  it("returns the first message of the first field", () => {
+    const error = new ApiError(400, { phones: ["Not valid phone numbers: 12"], other: ["x"] });
+    expect(firstFieldError(error)).toBe("Not valid phone numbers: 12");
+  });
+  it("returns null for other errors and shapes", () => {
+    expect(firstFieldError(new Error("boom"))).toBeNull();
+    expect(firstFieldError(new ApiError(400, null))).toBeNull();
+    expect(firstFieldError(new ApiError(400, { phones: [] }))).toBeNull();
   });
 });

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "feedback",
     "alerts",
     "stats",
+    "sms",
 ]
 
 MIDDLEWARE = [
@@ -89,6 +90,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "feedback": env("FEEDBACK_THROTTLE", "30/min"),
         "login": env("LOGIN_THROTTLE", "10/min"),
+        "sms_inbound": env("SMS_INBOUND_THROTTLE", "300/min"),
+        "sms_invite": env("SMS_INVITE_THROTTLE", "30/hour"),
     },
 }
 
@@ -108,3 +111,19 @@ ALERT_DISPATCH_SYNC = env("ALERT_DISPATCH_SYNC", "0") == "1"
 if not DEBUG:
     SESSION_COOKIE_SECURE = env("SECURE_COOKIES", "1") == "1"
     CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
+
+# SMS (Africa's Talking). With no API key, SMS is skipped and everything else keeps working.
+AT_USERNAME = env("AT_USERNAME", "sandbox")  # must be "sandbox" for the sandbox environment
+AT_API_KEY = env("AT_API_KEY", "")
+AT_BASE_URL = env("AT_BASE_URL", "")  # override the gateway endpoint (staging, local stand-in)
+AT_SENDER_ID = env("AT_SENDER_ID", "")  # shortcode or alphanumeric sender id, optional
+# The callback URL is /api/sms/inbound?token=<this>. Unset means the webhook rejects everything.
+AT_WEBHOOK_TOKEN = env("AT_WEBHOOK_TOKEN", "")
+SMS_HTTP_TIMEOUT = float(env("SMS_HTTP_TIMEOUT", "10"))
+SMS_MAX_RESPONSES_PER_DAY = int(env("SMS_MAX_RESPONSES_PER_DAY", "5"))  # per phone, anti-spam
+DEFAULT_COUNTRY_CODE = env("DEFAULT_COUNTRY_CODE", "254")
+# Plain ASCII keeps the message in one 160-character GSM segment.
+SMS_INVITE_TEXT = env(
+    "SMS_INVITE_TEXT",
+    "Thanks for buying our paint! Rate us 1-5 for product, care and happiness. Reply e.g. 4 5 4",
+)

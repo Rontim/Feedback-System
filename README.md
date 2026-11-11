@@ -33,6 +33,31 @@ If no care rep has an email, `CARE_ALERT_FALLBACK_EMAIL` is used. Care reps are 
 Endpoints: `/api/alerts` (`?unread=1`, `?handled=0|1`), `PATCH /api/alerts/{id}` (`read`, `handled`),
 `/api/notifications`, `/api/notifications/read-all`, `/api/notifications/{id}/read`.
 
+## SMS (Africa's Talking)
+Three jobs, one gateway client (`apps/api/sms/`), every message logged in `SmsLog`:
+1. **Invites** - care reps paste numbers on the dashboard's SMS page; each gets the "rate us" text.
+2. **Replies** - a customer answers `4 5 4` (also `454`, `4,5,4`, `4-5-4`: product, care, happiness).
+   The webhook scores it through the same `submit_feedback()` as the web form, so a 1-2-1 reply raises the
+   same alert. The customer gets a thank-you (or help text if the reply cannot be read). A repeated
+   gateway callback is processed once; a phone is capped at `SMS_MAX_RESPONSES_PER_DAY` (default 5).
+3. **Alerts** - detractor alerts are also texted to care reps who have a phone number. `sent` means at
+   least one rep was reached. Email and SMS fail independently; `retry_failed_alerts` retries both.
+
+Phone numbers are normalised to E.164 (`0700 111 222` -> `+254700111222`, see `DEFAULT_COUNTRY_CODE`), so
+the same person by web and SMS is one customer. Without `AT_API_KEY` SMS is skipped, not broken.
+
+**Sandbox setup** (menu names may differ slightly in the Africa's Talking dashboard):
+1. Create a sandbox app, copy its API key into `AT_API_KEY`; keep `AT_USERNAME=sandbox`.
+2. Set `AT_WEBHOOK_TOKEN` to a long random string. Africa's Talking does not sign callbacks, so the URL
+   carries the secret; with no token the webhook rejects everything.
+3. Expose the app publicly (ngrok / Cloudflare Tunnel in dev) and set the sandbox *incoming messages*
+   callback to `https://<public-host>/api/sms/inbound?token=<AT_WEBHOOK_TOKEN>` (the Next server proxies
+   `/api` to Django).
+4. Sandbox messages go to the web simulator, not real phones: send a reply from the simulator to see it
+   arrive. For a care rep to get SMS alerts, give their user a phone number (Django admin, or
+   `seed_demo --rep-phone`).
+5. `AT_BASE_URL` overrides the gateway endpoint (staging proxy or a local stand-in).
+
 ## Dashboard
 Care reps sign in at `/dashboard/login`. Pages: Overview (totals, detractor/passive/promoter donut,
 daily trend with a 7-day projection), Responses (server-side filtering, sorting and paging, with a

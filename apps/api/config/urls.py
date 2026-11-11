@@ -14,4 +14,5 @@ urlpatterns = [
     path("api/", include("feedback.urls")),
     path("api/", include("alerts.urls")),
     path("api/", include("stats.urls")),
+    path("api/", include("sms.urls")),
 ]

@@ -74,3 +74,15 @@ export function errorDetail(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+/** First validation message from a DRF 400 body such as `{ "phones": ["Not valid: 12"] }`. */
+export function firstFieldError(error: unknown): string | null {
+  if (!(error instanceof ApiError) || typeof error.body !== "object" || error.body === null) {
+    return null;
+  }
+  for (const value of Object.values(error.body as Record<string, unknown>)) {
+    if (Array.isArray(value) && typeof value[0] === "string") return value[0];
+    if (typeof value === "string") return value;
+  }
+  return null;
+}

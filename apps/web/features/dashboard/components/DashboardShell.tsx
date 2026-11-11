@@ -3,6 +3,7 @@
 import {
   DashboardOutlined,
   LogoutOutlined,
+  MessageOutlined,
   UnorderedListOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
@@ -18,6 +19,7 @@ const NAV: { key: string; label: string; icon: ReactNode }[] = [
   { key: "/dashboard", label: "Overview", icon: <DashboardOutlined /> },
   { key: "/dashboard/responses", label: "Responses", icon: <UnorderedListOutlined /> },
   { key: "/dashboard/alerts", label: "Alerts", icon: <WarningOutlined /> },
+  { key: "/dashboard/sms", label: "SMS", icon: <MessageOutlined /> },
 ];
 
 function ShellLayout({ children }: { children: ReactNode }) {

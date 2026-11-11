@@ -6,10 +6,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from feedback.models import Response
+from feedback.phone import is_e164, normalize_phone
+from sms import gateway as sms_gateway
+from sms.models import SmsLog
 
 from .dispatch import run_in_background
 from .emails import build_alert_email
 from .models import Alert, DeliveryStatus, Notification
+from .sms import build_alert_sms
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -26,6 +30,11 @@ def care_team_emails() -> list[str]:
     return emails
 
 
+def care_team_phones() -> list[str]:
+    phones = {normalize_phone(rep.phone) for rep in active_care_reps() if rep.phone}
+    return sorted(p for p in phones if is_e164(p))
+
+
 def raise_alert(response: Response) -> Alert | None:
     """Create the alert and in-app notifications; schedule delivery after commit.
 
@@ -34,7 +43,12 @@ def raise_alert(response: Response) -> Alert | None:
     """
     try:
         with transaction.atomic():
-            alert = Alert.objects.create(response=response)
+            alert = Alert.objects.create(
+                response=response,
+                sms_status=(
+                    DeliveryStatus.PENDING if sms_gateway.is_enabled() else DeliveryStatus.SKIPPED
+                ),
+            )
             Notification.objects.bulk_create(
                 [Notification(rep=rep, alert=alert) for rep in active_care_reps()]
             )
@@ -46,9 +60,15 @@ def raise_alert(response: Response) -> Alert | None:
 
 
 def deliver_alert(alert_id: int) -> None:
+    """Email and SMS are independent: one channel failing never blocks the other."""
     alert = Alert.objects.select_related("response__customer").filter(pk=alert_id).first()
-    if alert is not None:
-        deliver_email(alert)
+    if alert is None:
+        return
+    for channel in (deliver_email, deliver_sms):
+        try:
+            channel(alert)
+        except Exception:
+            logger.exception("Alert %s: %s crashed", alert.pk, channel.__name__)
 
 
 def deliver_email(alert: Alert) -> None:
@@ -70,6 +90,33 @@ def deliver_email(alert: Alert) -> None:
             alert.email_status = DeliveryStatus.SENT
             alert.email_error = ""
     alert.save(update_fields=["email_status", "email_error", "email_attempts"])
+
+
+def deliver_sms(alert: Alert) -> None:
+    """Text the care team. 'sent' means at least one rep was reached (a partial failure must not
+    make a retry re-text everyone who already got it)."""
+    if alert.sms_status == DeliveryStatus.SENT:
+        return
+    phones = care_team_phones()
+    skip_reason = None
+    if not sms_gateway.is_enabled():
+        skip_reason = "SMS gateway not configured"
+    elif not phones:
+        skip_reason = "No care rep phone numbers configured"
+    if skip_reason:
+        alert.sms_status, alert.sms_error = DeliveryStatus.SKIPPED, skip_reason
+        alert.save(update_fields=["sms_status", "sms_error"])
+        return
+    alert.sms_attempts += 1
+    outcomes = sms_gateway.send_sms(
+        phones, build_alert_sms(alert), kind=SmsLog.Kind.ALERT, response=alert.response
+    )
+    failures = [f"{o.phone}: {o.error}" for o in outcomes if o.status != "sent"]
+    if len(failures) < len(outcomes):
+        alert.sms_status, alert.sms_error = DeliveryStatus.SENT, "; ".join(failures)[:500]
+    else:
+        alert.sms_status, alert.sms_error = DeliveryStatus.FAILED, "; ".join(failures)[:500]
+    alert.save(update_fields=["sms_status", "sms_error", "sms_attempts"])
 
 
 def update_alert_state(

@@ -15,6 +15,14 @@ PAYLOAD = {
 
 
 @pytest.fixture(autouse=True)
+def _clear_throttle_cache():
+    """DRF throttles live in the cache; without this, request counts leak between tests."""
+    from django.core.cache import cache
+
+    cache.clear()
+
+
+@pytest.fixture(autouse=True)
 def _inline_alert_delivery(settings):
     settings.ALERT_DISPATCH_SYNC = True
     settings.CARE_ALERT_FALLBACK_EMAIL = ""
@@ -44,3 +52,51 @@ def post_feedback(django_capture_on_commit_callbacks):
             return APIClient().post("/api/feedback", {**PAYLOAD, **overrides}, format="json")
 
     return _post
+
+
+class FakeSmsClient:
+    """Stands in for the Africa's Talking client; records what would have been sent."""
+
+    def __init__(self):
+        self.sent: list[tuple[list[str], str]] = []
+        self.fail_with: Exception | None = None
+        self.reject: set[str] = set()  # numbers the "gateway" refuses
+
+    def send(self, recipients, message):
+        from sms.client import SendResult
+
+        if self.fail_with:
+            raise self.fail_with
+        self.sent.append((list(recipients), message))
+        return [
+            SendResult(
+                number=number,
+                status_code=403 if number in self.reject else 101,
+                status="InvalidPhoneNumber" if number in self.reject else "Sent",
+                message_id="" if number in self.reject else f"ATPid_{len(self.sent)}_{number}",
+            )
+            for number in recipients
+        ]
+
+    @property
+    def messages(self) -> list[str]:
+        return [message for _, message in self.sent]
+
+
+@pytest.fixture
+def fake_sms(monkeypatch):
+    client = FakeSmsClient()
+    monkeypatch.setattr("sms.gateway.get_client", lambda: client)
+    return client
+
+
+@pytest.fixture(autouse=True)
+def _sms_settings(settings):
+    settings.AT_API_KEY = ""
+    settings.AT_WEBHOOK_TOKEN = "s3cret"
+    settings.SMS_MAX_RESPONSES_PER_DAY = 5
+
+
+@pytest.fixture
+def capture_callbacks(django_capture_on_commit_callbacks):
+    return django_capture_on_commit_callbacks

@@ -5,11 +5,14 @@ from django.db.models import Q
 from django.utils import timezone
 
 from alerts.models import Alert, DeliveryStatus
-from alerts.services import deliver_email
+from alerts.services import deliver_email, deliver_sms
 
 
 class Command(BaseCommand):
-    help = "Retry alert emails that failed, or stayed pending (e.g. the server restarted mid-send)."
+    help = (
+        "Retry alert emails and SMS that failed, or stayed pending "
+        "(e.g. the server restarted mid-send)."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument("--max-attempts", type=int, default=5)
@@ -22,19 +25,29 @@ class Command(BaseCommand):
 
     def handle(self, *args, max_attempts, pending_after_minutes, **options):
         cutoff = timezone.now() - timedelta(minutes=pending_after_minutes)
-        todo = (
-            Alert.objects.select_related("response__customer")
-            .filter(email_attempts__lt=max_attempts)
-            .filter(
-                Q(email_status=DeliveryStatus.FAILED)
-                | Q(email_status=DeliveryStatus.PENDING, created_at__lt=cutoff)
+
+        def due(channel: str) -> Q:
+            status = f"{channel}_status"
+            return Q(**{f"{channel}_attempts__lt": max_attempts}) & (
+                Q(**{status: DeliveryStatus.FAILED})
+                | Q(**{status: DeliveryStatus.PENDING, "created_at__lt": cutoff})
             )
+
+        retried = {"email": [0, 0], "sms": [0, 0]}  # [sent, still failing]
+        alerts = Alert.objects.select_related("response__customer").filter(
+            due("email") | due("sms")
         )
-        sent = failed = 0
-        for alert in todo:
-            deliver_email(alert)
-            if alert.email_status == DeliveryStatus.SENT:
-                sent += 1
-            else:
-                failed += 1
-        self.stdout.write(f"Retried {sent + failed} alert(s): {sent} sent, {failed} still failing.")
+        for alert in alerts:
+            for channel, deliver in (("email", deliver_email), ("sms", deliver_sms)):
+                status_before = getattr(alert, f"{channel}_status")
+                if status_before not in (DeliveryStatus.FAILED, DeliveryStatus.PENDING):
+                    continue
+                if getattr(alert, f"{channel}_attempts") >= max_attempts:
+                    continue
+                deliver(alert)
+                sent = getattr(alert, f"{channel}_status") == DeliveryStatus.SENT
+                retried[channel][0 if sent else 1] += 1
+        for channel, (sent, failing) in retried.items():
+            self.stdout.write(
+                f"{channel}: retried {sent + failing}, {sent} sent, {failing} still failing"
+            )

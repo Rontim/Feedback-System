@@ -57,8 +57,13 @@ class Command(BaseCommand):
         )
         parser.add_argument("--rep-username", default="demo")
         parser.add_argument("--rep-password", default="demo-pass-123")
+        parser.add_argument(
+            "--rep-phone", default="", help="Phone for the demo rep so SMS alerts can be demoed."
+        )
 
-    def handle(self, *args, days, per_day, seed, reset, rep_username, rep_password, **options):
+    def handle(
+        self, *args, days, per_day, seed, reset, rep_username, rep_password, rep_phone, **options
+    ):
         seeded = Customer.objects.filter(email__endswith=SEED_DOMAIN)
         if seeded.exists():
             if not reset:
@@ -66,7 +71,7 @@ class Command(BaseCommand):
             seeded.delete()  # cascades to responses and alerts
 
         rng = random.Random(seed)
-        rep = self._ensure_rep(rep_username, rep_password)
+        rep = self._ensure_rep(rep_username, rep_password, rep_phone)
         customers = self._create_customers(rng)
         now = timezone.localtime()
         today = now.date()
@@ -91,14 +96,16 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"Care rep login: {rep_username} / {rep_password}")
 
-    def _ensure_rep(self, username: str, password: str):
+    def _ensure_rep(self, username: str, password: str, phone: str):
         User = get_user_model()
         rep, created = User.objects.get_or_create(
             username=username, defaults={"email": f"{username}@companyx.test", "first_name": "Demo"}
         )
         if created:
             rep.set_password(password)
-            rep.save()
+        if phone:
+            rep.phone = phone
+        rep.save()
         return rep
 
     def _create_customers(self, rng: random.Random) -> list[Customer]:

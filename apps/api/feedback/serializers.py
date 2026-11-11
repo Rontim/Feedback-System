@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Customer, Response
+from .phone import is_e164, normalize_phone
 
 
 class FeedbackInputSerializer(serializers.Serializer):
@@ -14,6 +15,12 @@ class FeedbackInputSerializer(serializers.Serializer):
         choices=Customer.Type.choices, required=False, default=Customer.Type.HOMEOWNER
     )
     comment = serializers.CharField(max_length=1000, required=False, allow_blank=True, default="")
+
+    def validate_phone(self, value: str) -> str:
+        phone = normalize_phone(value)
+        if not is_e164(phone):
+            raise serializers.ValidationError("Enter a valid phone number.")
+        return phone
 
 
 class CustomerSerializer(serializers.ModelSerializer):
