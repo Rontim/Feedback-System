@@ -2,6 +2,8 @@
 
 from django.db import transaction
 
+from alerts import services as alert_services
+
 from . import scoring
 from .models import Customer, Response
 
@@ -40,5 +42,6 @@ def submit_feedback(
         channel=channel,
         comment=comment,
     )
-    # Hook for the alert service (next step): transaction.on_commit(lambda: send_alert(response))
+    if result.category == scoring.DETRACTOR:
+        alert_services.raise_alert(response)  # never raises: feedback is already safe
     return response

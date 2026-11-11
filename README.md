@@ -14,6 +14,30 @@ docker compose up --build
 
 Create a care rep: `docker compose exec api python manage.py createsuperuser`
 
+## Tests
+
+```bash
+cd apps/api && pip install -r requirements-dev.txt && pytest   # needs Postgres (see .env.example)
+cd apps/web && pnpm install && pnpm test
+```
+
+## Alerts (apps/api/alerts)
+
+A detractor response creates an `Alert` and one in-app `Notification` per active care rep in the
+same transaction as the response. After commit, a background thread emails the care team (name,
+email, phone, per-question scores, comment; `Reply-To` is the customer). Email status is tracked
+on the alert (`pending/sent/failed`), so a mail outage never loses feedback and can be recovered:
+
+```bash
+docker compose exec api python manage.py retry_failed_alerts
+```
+
+If no care rep has an email, `CARE_ALERT_FALLBACK_EMAIL` is used. Care reps are users with
+`is_care_rep=True` (create via `createsuperuser` or the Django admin). Auth is session-based:
+`GET /api/auth/csrf`, then `POST /api/auth/login` with an `X-CSRFToken` header.
+Endpoints: `/api/alerts` (`?unread=1`, `?handled=0|1`), `PATCH /api/alerts/{id}` (`read`, `handled`),
+`/api/notifications`, `/api/notifications/read-all`, `/api/notifications/{id}/read`.
+
 ## Frontend (apps/web)
 
 Next.js App Router + Ant Design v5, styled only through `ConfigProvider` tokens (`app/theme.ts`).
@@ -21,13 +45,6 @@ Questionnaire lives in `features/feedback/`: `Steps` + `Form`, one question per 
 face icons, `Radio.Group` button style for customer type, `TextArea` with `showCount` for the
 optional comment, and an AntD `Result` on success. Form field names match the API payload.
 The browser only calls same-origin `/api/*`; Next rewrites it to Django (`API_URL`).
-
-## Tests
-
-```bash
-cd apps/api && pip install -r requirements-dev.txt && pytest   # needs Postgres (see .env.example)
-cd apps/web && pnpm install && pnpm test
-```
 
 ## Scoring
 

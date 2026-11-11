@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "accounts",
     "feedback",
+    "alerts",
 ]
 
 MIDDLEWARE = [
@@ -80,8 +81,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
-    "DEFAULT_THROTTLE_RATES": {"feedback": env("FEEDBACK_THROTTLE", "30/min")},
+    "DEFAULT_PERMISSION_CLASSES": ["accounts.permissions.IsCareRep"],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
+    "DEFAULT_THROTTLE_RATES": {
+        "feedback": env("FEEDBACK_THROTTLE", "30/min"),
+        "login": env("LOGIN_THROTTLE", "10/min"),
+    },
 }
 
 # Email: Mailpit locally, real SMTP in staging/prod.
@@ -89,6 +95,13 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("EMAIL_HOST", "localhost")
 EMAIL_PORT = int(env("EMAIL_PORT", "1025"))
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "feedback@companyx.test")
+
+# Alerts
+# Used only when no active care rep has an email address on file.
+CARE_ALERT_FALLBACK_EMAIL = env("CARE_ALERT_FALLBACK_EMAIL", "")
+DASHBOARD_URL = env("DASHBOARD_URL", "http://localhost:3000/dashboard")
+# Run alert delivery inline instead of in a worker thread (tests, one-off scripts).
+ALERT_DISPATCH_SYNC = env("ALERT_DISPATCH_SYNC", "0") == "1"
 
 if not DEBUG:
     SESSION_COOKIE_SECURE = env("SECURE_COOKIES", "1") == "1"
