@@ -1,9 +1,14 @@
-from rest_framework import status
+from datetime import date
+
+from django.db.models import Q
+from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response as DRFResponse
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
-from .serializers import FeedbackInputSerializer
+from .models import Response
+from .serializers import FeedbackInputSerializer, ResponseDetailSerializer
 from .services import submit_feedback
 
 
@@ -36,3 +41,55 @@ class FeedbackCreateView(APIView):
             {"id": response.id, "mean": str(response.mean), "category": response.category},
             status=status.HTTP_201_CREATED,
         )
+
+
+ORDERINGS = {"created_at", "-created_at", "mean", "-mean"}
+RESPONSES = Response.objects.select_related("customer", "alert")
+
+
+def _csv(raw: str | None) -> list[str]:
+    return [part for part in (raw or "").split(",") if part]
+
+
+def _parse_date(params, key: str) -> date | None:
+    raw = params.get(key)
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        raise ValidationError({key: "Use YYYY-MM-DD."}) from None
+
+
+class ResponseListView(generics.ListAPIView):
+    """Care-rep table. Filters: category, channel (comma lists), q (name/email/phone),
+    from/to (YYYY-MM-DD, local days), ordering (created_at, mean; prefix - for descending)."""
+
+    serializer_class = ResponseDetailSerializer
+
+    def get_queryset(self):
+        params = self.request.query_params
+        qs = RESPONSES.all()
+        if categories := _csv(params.get("category")):
+            qs = qs.filter(category__in=categories)
+        if channels := _csv(params.get("channel")):
+            qs = qs.filter(channel__in=channels)
+        if term := params.get("q", "").strip():
+            qs = qs.filter(
+                Q(customer__name__icontains=term)
+                | Q(customer__email__icontains=term)
+                | Q(customer__phone__icontains=term)
+            )
+        if start := _parse_date(params, "from"):
+            qs = qs.filter(created_at__date__gte=start)
+        if end := _parse_date(params, "to"):
+            qs = qs.filter(created_at__date__lte=end)
+        ordering = params.get("ordering", "-created_at")
+        if ordering not in ORDERINGS:
+            raise ValidationError({"ordering": f"Choose one of {sorted(ORDERINGS)}."})
+        return qs.order_by(ordering, "-id")
+
+
+class ResponseDetailView(generics.RetrieveAPIView):
+    queryset = RESPONSES.all()
+    serializer_class = ResponseDetailSerializer

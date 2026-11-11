@@ -1,14 +1,9 @@
 from rest_framework import serializers
 
-from feedback.models import Customer, Response
+from feedback.models import Response
+from feedback.serializers import CustomerSerializer
 
 from .models import Alert, Notification
-
-
-class CustomerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Customer
-        fields = ["id", "name", "email", "phone", "type"]
 
 
 class ResponseSerializer(serializers.ModelSerializer):

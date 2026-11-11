@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "accounts",
     "feedback",
     "alerts",
+    "stats",
 ]
 
 MIDDLEWARE = [
@@ -71,7 +72,8 @@ DATABASES = {
 
 AUTH_USER_MODEL = "accounts.User"
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+# Dashboard days (trend buckets, date filters) follow this zone; timestamps are stored in UTC.
+TIME_ZONE = env("TIME_ZONE", "Africa/Nairobi")
 USE_I18N = True
 USE_TZ = True
 
@@ -82,7 +84,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["accounts.permissions.IsCareRep"],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "config.pagination.StandardPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_THROTTLE_RATES": {
         "feedback": env("FEEDBACK_THROTTLE", "30/min"),
