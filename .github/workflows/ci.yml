@@ -33,7 +33,7 @@ jobs:
       - name: Ruff
         working-directory: apps/api
         run: |
-          pip install ruff
+          pip install -r requirements-dev.txt
           ruff check .
           ruff format --check .
       - name: ESLint + typecheck
