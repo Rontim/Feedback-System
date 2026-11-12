@@ -10,7 +10,9 @@ docker compose up --build
 - Web: http://localhost:3000  ·  API: http://localhost:8000
 - Mailpit inbox: http://localhost:8025  ·  Django admin: http://localhost:8000/admin
 
-Create a care rep: `docker compose exec api python manage.py createsuperuser`
+Create the Django admin account with `docker compose exec api python manage.py createsuperuser`.
+Then create care rep accounts in Django admin. Admin accounts are not care reps and cannot access
+the alerts dashboard; accounts created through the admin are care reps without admin privileges.
 
 The API and frontend source directories are mounted into their containers. Django's development
 server and Next.js automatically reload code changes; the frontend's dependencies and build cache

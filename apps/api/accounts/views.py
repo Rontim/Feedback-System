@@ -39,7 +39,7 @@ class LoginView(APIView):
         credentials = LoginSerializer(data=request.data)
         credentials.is_valid(raise_exception=True)
         user = authenticate(request, **credentials.validated_data)
-        if user is None or not user.is_care_rep:
+        if user is None or not user.is_care_rep or user.is_superuser:
             return Response(
                 {"detail": "Invalid username or password."}, status=status.HTTP_400_BAD_REQUEST
             )

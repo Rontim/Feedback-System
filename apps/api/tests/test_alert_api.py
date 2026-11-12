@@ -29,6 +29,22 @@ def test_non_care_rep_user_is_rejected(care_rep):
     assert client.get("/api/alerts").status_code == 403
 
 
+def test_non_care_rep_cannot_read_or_handle_alerts(care_rep, alert):
+    care_rep.is_care_rep = False
+    care_rep.save()
+    client = APIClient()
+    client.force_login(care_rep)
+    notification = Notification.objects.get(rep=care_rep)
+
+    assert client.get("/api/alerts").status_code == 403
+    assert (
+        client.patch(f"/api/alerts/{alert.pk}", {"handled": True}, format="json").status_code == 403
+    )
+    assert client.get("/api/notifications").status_code == 403
+    assert client.post("/api/notifications/read-all").status_code == 403
+    assert client.post(f"/api/notifications/{notification.pk}/read").status_code == 403
+
+
 def test_list_alerts_contains_name_and_email(rep_client, alert):
     body = rep_client.get("/api/alerts").json()
     assert body["count"] == 1
@@ -72,7 +88,7 @@ def test_notifications_badge_and_read_flow(rep_client, alert):
 
 
 def test_notifications_are_private_to_each_rep(rep_client, alert, django_user_model):
-    other = django_user_model.objects.create_user("other", password="pw-12345")
+    other = django_user_model.objects.create_user("other", password="pw-12345", is_care_rep=True)
     client = APIClient()
     client.force_login(other)
     # `other` was created after the alert, so has no notification and cannot read grace's.
