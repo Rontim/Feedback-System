@@ -21,7 +21,7 @@ def get_tagger() -> CommentTagger | None:
         base_url=settings.AI_BASE_URL,
         model=settings.AI_MODEL,
         timeout=settings.AI_TIMEOUT,
-        max_tokens=settings.AI_MAX_TOKENS
+        max_tokens=settings.AI_MAX_TOKENS,
     )
 
 

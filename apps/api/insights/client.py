@@ -120,12 +120,11 @@ class CommentTagger:
                 ],
                 temperature=0,
                 max_tokens=self.max_tokens,
-
             )
             choice = completion.choices[0]
             content = choice.message.content or ""
             finish_reason = choice.finish_reason
-        except Exception as exc:    
+        except Exception as exc:
             raise AiError(f"{type(exc).__name__}: {exc}") from exc
         if finish_reason == "length" and not content.strip():
             raise AiError("The model ran out of tokens before answering (is thinking enabled?)")

@@ -51,8 +51,7 @@ def test_parse_rejects_anything_outside_the_fixed_lists(reply):
 
 def test_extract_json_ignores_think_block_containing_braces():
     reply = '<think>maybe {"topic": "price"} but no</think>{"sentiment":"neutral","topic":"other"}'
-    assert extract_json_object(
-        reply) == {"sentiment": "neutral", "topic": "other"}
+    assert extract_json_object(reply) == {"sentiment": "neutral", "topic": "other"}
 
 
 class FakeOpenAI:
@@ -61,8 +60,7 @@ class FakeOpenAI:
     ):
         self.calls: list[dict] = []
         self._content, self._finish, self._error = content, finish, error
-        self.chat = SimpleNamespace(
-            completions=SimpleNamespace(create=self._create))
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
 
     def _create(self, **kwargs):
         self.calls.append(kwargs)
@@ -70,8 +68,7 @@ class FakeOpenAI:
             raise self._error
         message = SimpleNamespace(content=self._content)
         return SimpleNamespace(
-            choices=[SimpleNamespace(
-                message=message, finish_reason=self._finish)]
+            choices=[SimpleNamespace(message=message, finish_reason=self._finish)]
         )
 
 
