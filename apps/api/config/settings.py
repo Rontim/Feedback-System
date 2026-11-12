@@ -93,8 +93,14 @@ TIME_ZONE = env("TIME_ZONE", "Africa/Nairobi")
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "/static/"
+# --- Static files ------------------------------------------------------------
+STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
@@ -155,9 +161,3 @@ AI_BASE_URL = env("AI_BASE_URL", "")
 AI_MODEL = env("AI_MODEL", "")
 AI_TIMEOUT = float(env("AI_TIMEOUT", "20"))
 AI_MAX_TOKENS = int(env("AI_MAX_TOKENS", "300"))
-
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
