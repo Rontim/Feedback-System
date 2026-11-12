@@ -2,15 +2,24 @@
 
 Django + DRF API, Next.js (TypeScript) web app, PostgreSQL, Mailpit for local email.
 
-## Run locally
+## Run the development environment
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
-- Web: http://localhost:3000  ·  API health: http://localhost:3000/api/health
+- Web: http://localhost:3000  ·  API: http://localhost:8000
 - Mailpit inbox: http://localhost:8025  ·  Django admin: http://localhost:8000/admin
 
 Create a care rep: `docker compose exec api python manage.py createsuperuser`
+
+The API and frontend source directories are mounted into their containers. Django's development
+server and Next.js automatically reload code changes; the frontend's dependencies and build cache
+stay in Docker volumes so Windows host dependencies are not used inside Linux containers. After
+changing frontend dependencies, run `docker compose exec web pnpm install --frozen-lockfile` and
+restart the web service with `docker compose restart web`.
+
+Stop the containers with `docker compose down` (use `docker compose down -v` only when you also
+want to delete the local PostgreSQL data and frontend dependency volumes).
 
 ## Tests
 ```bash
