@@ -61,3 +61,17 @@ def test_non_care_rep_cannot_log_in(care_rep):
         HTTP_X_CSRFTOKEN=token,
     )
     assert res.status_code == 400
+
+
+def test_superuser_cannot_log_in_as_a_care_rep(django_user_model):
+    django_user_model.objects.create_superuser(
+        "admin", email="admin@example.com", password="admin-pass-123", is_care_rep=True
+    )
+    client, token = csrf_client()
+    res = client.post(
+        "/api/auth/login",
+        {"username": "admin", "password": "admin-pass-123"},
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert res.status_code == 400

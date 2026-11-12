@@ -99,10 +99,16 @@ class Command(BaseCommand):
     def _ensure_rep(self, username: str, password: str, phone: str):
         User = get_user_model()
         rep, created = User.objects.get_or_create(
-            username=username, defaults={"email": f"{username}@companyx.test", "first_name": "Demo"}
+            username=username,
+            defaults={
+                "email": f"{username}@companyx.test",
+                "first_name": "Demo",
+                "is_care_rep": True,
+            },
         )
         if created:
             rep.set_password(password)
+        rep.is_care_rep = True
         if phone:
             rep.phone = phone
         rep.save()

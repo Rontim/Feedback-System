@@ -32,7 +32,11 @@ def _inline_alert_delivery(settings):
 @pytest.fixture
 def care_rep(db):
     return get_user_model().objects.create_user(
-        "grace", email="grace@companyx.test", password="pw-12345", first_name="Grace"
+        "grace",
+        email="grace@companyx.test",
+        password="pw-12345",
+        first_name="Grace",
+        is_care_rep=True,
     )
 
 

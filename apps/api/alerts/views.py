@@ -4,6 +4,8 @@ from rest_framework import generics, status
 from rest_framework.response import Response as DRFResponse
 from rest_framework.views import APIView
 
+from accounts.permissions import IsCareRep
+
 from .models import Alert, Notification
 from .serializers import AlertSerializer, AlertUpdateSerializer, NotificationSerializer
 from .services import update_alert_state
@@ -14,6 +16,7 @@ ALERTS = Alert.objects.select_related("response__customer", "response__analysis"
 class AlertListView(generics.ListAPIView):
     """?unread=1 for alerts nobody has opened, ?handled=0|1 to split open/closed."""
 
+    permission_classes = [IsCareRep]
     serializer_class = AlertSerializer
 
     def get_queryset(self):
@@ -27,6 +30,7 @@ class AlertListView(generics.ListAPIView):
 
 
 class AlertDetailView(generics.RetrieveAPIView):
+    permission_classes = [IsCareRep]
     queryset = ALERTS.all()
     serializer_class = AlertSerializer
 
@@ -46,6 +50,8 @@ class AlertDetailView(generics.RetrieveAPIView):
 class NotificationListView(APIView):
     """The bell dropdown: latest 20 for the signed-in rep plus the unread badge count."""
 
+    permission_classes = [IsCareRep]
+
     def get(self, request):
         mine = Notification.objects.filter(rep=request.user).select_related(
             "alert__response__customer"
@@ -59,6 +65,8 @@ class NotificationListView(APIView):
 
 
 class NotificationReadView(APIView):
+    permission_classes = [IsCareRep]
+
     def post(self, request, pk: int):
         notification = get_object_or_404(Notification, pk=pk, rep=request.user)
         if notification.read_at is None:
@@ -68,6 +76,8 @@ class NotificationReadView(APIView):
 
 
 class NotificationReadAllView(APIView):
+    permission_classes = [IsCareRep]
+
     def post(self, request):
         Notification.objects.filter(rep=request.user, read_at__isnull=True).update(
             read_at=timezone.now()

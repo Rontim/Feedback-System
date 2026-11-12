@@ -20,7 +20,7 @@ User = get_user_model()
 
 
 def active_care_reps():
-    return User.objects.filter(is_active=True, is_care_rep=True)
+    return User.objects.filter(is_active=True, is_care_rep=True, is_superuser=False)
 
 
 def care_team_emails() -> list[str]:

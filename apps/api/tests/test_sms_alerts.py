@@ -94,7 +94,9 @@ def test_retry_command_recovers_a_failed_sms(rep_with_phone, fake_sms, post_feed
 def test_partial_failure_still_counts_as_sent_and_is_not_retried(
     rep_with_phone, fake_sms, post_feedback, django_user_model
 ):
-    django_user_model.objects.create_user("second", password="pw-12345", phone="+254733555666")
+    django_user_model.objects.create_user(
+        "second", password="pw-12345", phone="+254733555666", is_care_rep=True
+    )
     fake_sms.reject = {"+254733555666"}
     post_feedback()
     alert = Alert.objects.get()

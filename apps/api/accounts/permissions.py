@@ -6,4 +6,10 @@ class IsCareRep(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(user and user.is_authenticated and user.is_active and user.is_care_rep)
+        return bool(
+            user
+            and user.is_authenticated
+            and user.is_active
+            and user.is_care_rep
+            and not user.is_superuser
+        )
