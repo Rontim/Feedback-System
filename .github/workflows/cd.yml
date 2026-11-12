@@ -1,15 +1,19 @@
 name: CD
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy-production:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     environment:
       name: production
     #   url: https://feedback-api-uc.a.run.app
@@ -57,7 +61,7 @@ jobs:
           gcloud run jobs deploy django-migrate \
             --image=us-central1-docker.pkg.dev/feedbacksys/feedback-repo/api:latest \
             --region=us-central1 \
-            --add-cloudsql-instances=feedbacksys:us-central1:assessment-db \
+            --set-cloudsql-instances=feedbacksys:us-central1:assessment-db \
             --set-secrets="DJANGO_SECRET_KEY=django-env-vars:latest,POSTGRES_PASSWORD=django-env-vars:latest" \
             --set-env-vars="INSTANCE_CONNECTION_NAME=feedbacksys:us-central1:assessment-db" \
             --command="python" \
