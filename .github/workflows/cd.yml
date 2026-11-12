@@ -14,10 +14,9 @@ concurrency:
 
 jobs:
   test:
-    name: Test and build Docker image
     uses: ./.github/workflows/ci.yml
 
-  deploy-production:
+  deploy:
     runs-on: ubuntu-latest
     needs: test
     environment:
@@ -100,8 +99,8 @@ jobs:
             POSTGRES_USER=feedback
             POSTGRES_HOST=/cloudsql/feedbacksys:us-central1:assessment-db
             DJANGO_DEBUG=0
-            DJANGO_ALLOWED_HOSTS=*
-            DJANGO_CSRF_TRUSTED_ORIGINS=https://feedback-api-uc.a.run.app
+            DJANGO_ALLOWED_HOSTS=feedback-api-nwcj3afvoq-uc.a.run.app,feedback-web-nwcj3afvoq-uc.a.run.app
+            DJANGO_CSRF_TRUSTED_ORIGINS=https://feedback-api-nwcj3afvoq-uc.a.run.app
             TIME_ZONE=Africa/Nairobi
             EMAIL_HOST=smtp.gmail.com
             EMAIL_PORT=587
@@ -117,4 +116,4 @@ jobs:
           region: us-central1
           flags: "--allow-unauthenticated --port=3000"
           env_vars: |
-            API_URL=${{ steps.deploy-api.outputs.url }}
+            API_URL=https://feedback-api-nwcj3afvoq-uc.a.run.app
