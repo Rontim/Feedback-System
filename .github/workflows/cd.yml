@@ -62,11 +62,11 @@ jobs:
             --image=us-central1-docker.pkg.dev/feedbacksys/feedback-repo/api:latest \
             --region=us-central1 \
             --set-cloudsql-instances=feedbacksys:us-central1:assessment-db \
-            --update-secrets="/app/.env=django-env-vars:latest" \
-            --set-env-vars="INSTANCE_CONNECTION_NAME=feedbacksys:us-central1:assessment-db" \
+            --set-secrets="DJANGO_SECRET_KEY=django-secret-key:latest,POSTGRES_PASSWORD=postgres-password:latest" \
+            --set-env-vars="INSTANCE_CONNECTION_NAME=feedbacksys:us-central1:assessment-db,POSTGRES_DB=feedback,POSTGRES_USER=feedback,POSTGRES_HOST=/cloudsql/feedbacksys:us-central1:assessment-db,DJANGO_DEBUG=0,DJANGO_ALLOWED_HOSTS=*" \
             --command="python" \
-            --args="/app/manage.py,migrate,--noinput" \
-            --max-retries=0
+            --args="apps/api/manage.py,migrate" \
+            --max-retries=0 || true
 
           gcloud run jobs execute django-migrate --region=us-central1 --wait
 
@@ -79,7 +79,17 @@ jobs:
           region: us-central1
           flags: "--allow-unauthenticated --add-cloudsql-instances=feedbacksys:us-central1:assessment-db --port=8000"
           secrets: |
-            /app/.env=django-env-vars:latest
+            DJANGO_SECRET_KEY=django-secret-key:latest
+            POSTGRES_PASSWORD=postgres-password:latest
+            AT_API_KEY=at-api-key:latest
+            AI_API_KEY=ai-api-key:latest
+            AI_BASE_URL=ai-base-url:latest
+            AI_MODEL=ai-model:latest
+            AT_WEBHOOK_TOKEN=at-webhook-token:latest
+            EMAIL_HOST_PASSWORD=email-host-password:latest
+            EMAIL_HOST_USER=email-host-user:latest
+            DEFAULT_FROM_EMAIL=default-from-email:latest
+            CARE_ALERT_FALLBACK_EMAIL=default-from-email:latest
           env_vars: |
             INSTANCE_CONNECTION_NAME=feedbacksys:us-central1:assessment-db
             POSTGRES_DB=feedback
@@ -92,7 +102,6 @@ jobs:
             EMAIL_HOST=smtp.gmail.com
             EMAIL_PORT=587
             EMAIL_USE_TLS=1
-
             AT_USERNAME=sandbox
 
       # --- 4. DEPLOY FRONTEND TO CLOUD RUN ---
