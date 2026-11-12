@@ -3,6 +3,7 @@
 from django.db import transaction
 
 from alerts import services as alert_services
+from insights import services as insight_services
 
 from . import scoring
 from .models import Customer, Response
@@ -44,4 +45,7 @@ def submit_feedback(
     )
     if result.category == scoring.DETRACTOR:
         alert_services.raise_alert(response)  # never raises: feedback is already safe
+    insight_services.schedule_tagging(
+        response
+    )  # runs after commit; AI failure cannot lose feedback
     return response

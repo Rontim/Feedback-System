@@ -44,7 +44,7 @@ class FeedbackCreateView(APIView):
 
 
 ORDERINGS = {"created_at", "-created_at", "mean", "-mean"}
-RESPONSES = Response.objects.select_related("customer", "alert")
+RESPONSES = Response.objects.select_related("customer", "alert", "analysis")
 
 
 def _csv(raw: str | None) -> list[str]:
@@ -62,8 +62,11 @@ def _parse_date(params, key: str) -> date | None:
 
 
 class ResponseListView(generics.ListAPIView):
-    """Care-rep table. Filters: category, channel (comma lists), q (name/email/phone),
-    from/to (YYYY-MM-DD, local days), ordering (created_at, mean; prefix - for descending)."""
+    """Care-rep table.
+
+    Filters: category, channel, sentiment, topic (comma lists), q (name/email/phone),
+    from/to (YYYY-MM-DD, local days), ordering (created_at, mean; prefix - for descending).
+    """
 
     serializer_class = ResponseDetailSerializer
 
@@ -74,6 +77,10 @@ class ResponseListView(generics.ListAPIView):
             qs = qs.filter(category__in=categories)
         if channels := _csv(params.get("channel")):
             qs = qs.filter(channel__in=channels)
+        if sentiments := _csv(params.get("sentiment")):
+            qs = qs.filter(analysis__sentiment__in=sentiments)
+        if topics := _csv(params.get("topic")):
+            qs = qs.filter(analysis__topic__in=topics)
         if term := params.get("q", "").strip():
             qs = qs.filter(
                 Q(customer__name__icontains=term)

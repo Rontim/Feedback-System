@@ -6,6 +6,7 @@ import type { TableColumnsType } from "antd";
 import { useState } from "react";
 import { errorDetail } from "../../../lib/http";
 import { patchAlert } from "../api";
+import { AnalysisTags } from "./AnalysisTags";
 import { CATEGORY_TAG_COLOR, formatDateTime } from "../format";
 import { useAlerts } from "../queries";
 import { buildAlertsQuery, type AlertFilter } from "../queryParams";
@@ -74,7 +75,17 @@ export function AlertsTable() {
       title: "Comment",
       key: "comment",
       ellipsis: true,
-      render: (_, row) => row.response.comment || <Typography.Text type="secondary">–</Typography.Text>,
+      render: (_, row) =>
+        row.response.comment ? (
+          <Flex vertical>
+            <Typography.Text ellipsis={{ tooltip: row.response.comment }}>
+              {row.response.comment}
+            </Typography.Text>
+            <AnalysisTags analysis={row.response.analysis} />
+          </Flex>
+        ) : (
+          <Typography.Text type="secondary">–</Typography.Text>
+        ),
     },
     {
       title: "Email",

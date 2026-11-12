@@ -6,6 +6,7 @@ import {
   getNotifications,
   getResponses,
   getSummary,
+  getTopics,
   getTrend,
 } from "./api";
 
@@ -15,6 +16,7 @@ export const POLL_MS = 5_000;
 export const queryKeys = {
   summary: ["summary"],
   trend: (days: number) => ["trend", days],
+  topics: (days: number) => ["topics", days],
   responses: (query: string) => ["responses", query],
   alerts: (query: string) => ["alerts", query],
   notifications: ["notifications"],
@@ -27,6 +29,14 @@ export const useTrend = (days: number) =>
   useQuery({
     queryKey: queryKeys.trend(days),
     queryFn: () => getTrend(days),
+    refetchInterval: POLL_MS,
+    placeholderData: keepPreviousData,
+  });
+
+export const useTopics = (days: number) =>
+  useQuery({
+    queryKey: queryKeys.topics(days),
+    queryFn: () => getTopics(days),
     refetchInterval: POLL_MS,
     placeholderData: keepPreviousData,
   });

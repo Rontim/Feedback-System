@@ -1,4 +1,5 @@
 import type { Category } from "../../lib/rating";
+import type { Sentiment, Topic } from "./types";
 
 export const CATEGORY_LABEL: Record<Category, string> = {
   detractor: "Detractor",
@@ -11,6 +12,27 @@ export const CATEGORY_TAG_COLOR: Record<Category, string> = {
   detractor: "error",
   passive: "warning",
   promoter: "success",
+};
+
+export const SENTIMENT_LABEL: Record<Sentiment, string> = {
+  positive: "Positive",
+  neutral: "Neutral",
+  negative: "Negative",
+};
+
+export const SENTIMENT_TAG_COLOR: Record<Sentiment, string> = {
+  positive: "success",
+  neutral: "default",
+  negative: "error",
+};
+
+export const TOPIC_LABEL: Record<Topic, string> = {
+  colour: "Colour",
+  price: "Price",
+  delivery: "Delivery",
+  service: "Service",
+  quality: "Quality",
+  other: "Other",
 };
 
 const DATE_TIME = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" });

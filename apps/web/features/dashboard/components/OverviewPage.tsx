@@ -4,6 +4,7 @@ import { Col, Row } from "antd";
 import { useSummary } from "../queries";
 import { CategoryDonut } from "./CategoryDonut";
 import { SummaryCards } from "./SummaryCards";
+import { TopicsChart } from "./TopicsChart";
 import { TrendChart } from "./TrendChart";
 
 export function OverviewPage() {
@@ -18,6 +19,9 @@ export function OverviewPage() {
       </Col>
       <Col xs={24} xl={15}>
         <TrendChart />
+      </Col>
+      <Col span={24}>
+        <TopicsChart />
       </Col>
     </Row>
   );

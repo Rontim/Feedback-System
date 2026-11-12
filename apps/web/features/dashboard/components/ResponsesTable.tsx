@@ -6,7 +6,14 @@ import type { RangePickerProps } from "antd/es/date-picker";
 import type { SorterResult } from "antd/es/table/interface";
 import { useState } from "react";
 import type { Category } from "../../../lib/rating";
-import { CATEGORY_LABEL, CATEGORY_TAG_COLOR, formatDateTime } from "../format";
+import {
+  CATEGORY_LABEL,
+  CATEGORY_TAG_COLOR,
+  SENTIMENT_LABEL,
+  SENTIMENT_TAG_COLOR,
+  TOPIC_LABEL,
+  formatDateTime,
+} from "../format";
 import { useResponses } from "../queries";
 import {
   DEFAULT_RESPONSES_PARAMS,
@@ -14,7 +21,7 @@ import {
   type ResponseOrdering,
   type ResponsesParams,
 } from "../queryParams";
-import type { Channel, ResponseRow } from "../types";
+import type { Channel, ResponseRow, Sentiment, Topic } from "../types";
 import { ResponseDrawer } from "./ResponseDrawer";
 
 const CATEGORY_FILTERS = (["detractor", "passive", "promoter"] as const).map((value) => ({
@@ -26,6 +33,19 @@ const CHANNEL_FILTERS: { text: string; value: Channel }[] = [
   { text: "SMS", value: "sms" },
 ];
 
+const SENTIMENT_FILTERS = (Object.keys(SENTIMENT_LABEL) as Sentiment[]).map((value) => ({
+  text: SENTIMENT_LABEL[value],
+  value,
+}));
+const TOPIC_FILTERS = (Object.keys(TOPIC_LABEL) as Topic[]).map((value) => ({
+  text: TOPIC_LABEL[value],
+  value,
+}));
+
+const hasOwn = (object: object, key: unknown): boolean =>
+  typeof key === "string" && Object.prototype.hasOwnProperty.call(object, key);
+const isSentiment = (value: unknown): value is Sentiment => hasOwn(SENTIMENT_LABEL, value);
+const isTopic = (value: unknown): value is Topic => hasOwn(TOPIC_LABEL, value);
 const isCategory = (value: unknown): value is Category =>
   value === "detractor" || value === "passive" || value === "promoter";
 const isChannel = (value: unknown): value is Channel => value === "web" || value === "sms";
@@ -51,7 +71,7 @@ export function ResponsesTable() {
     {
       title: "Received",
       dataIndex: "created_at",
-      width: 160,
+      width: 150,
       sorter: true,
       sortOrder: sortOrderFor(params.ordering, "created_at"),
       render: (value: string) => formatDateTime(value),
@@ -59,18 +79,20 @@ export function ResponsesTable() {
     {
       title: "Customer",
       key: "customer",
+      width: 250,
       render: (_, row) => (
         <Flex vertical>
-          <Typography.Text>{row.customer.name || row.customer.phone}</Typography.Text>
-          {row.customer.email && <Typography.Text type="secondary">{row.customer.email}</Typography.Text>}
+          <Flex gap={6} align="center">
+            <Typography.Text ellipsis>{row.customer.name || row.customer.phone}</Typography.Text>
+            {row.customer.type === "painter" && <Tag color="blue">painter</Tag>}
+          </Flex>
+          {row.customer.email && (
+            <Typography.Text type="secondary" ellipsis>
+              {row.customer.email}
+            </Typography.Text>
+          )}
         </Flex>
       ),
-    },
-    {
-      title: "Type",
-      key: "type",
-      width: 100,
-      render: (_, row) => <Tag color={row.customer.type === "painter" ? "blue" : "default"}>{row.customer.type}</Tag>,
     },
     {
       title: "Channel",
@@ -80,9 +102,9 @@ export function ResponsesTable() {
       filteredValue: params.channels,
       render: (value: Channel) => value.toUpperCase(),
     },
-    { title: "Product", dataIndex: "q_product", width: 80, align: "center" },
-    { title: "Care", dataIndex: "q_care", width: 70, align: "center" },
-    { title: "Happy", dataIndex: "q_happy", width: 70, align: "center" },
+    { title: "Product", dataIndex: "q_product", width: 75, align: "center" },
+    { title: "Care", dataIndex: "q_care", width: 60, align: "center" },
+    { title: "Happy", dataIndex: "q_happy", width: 65, align: "center" },
     {
       title: "Mean",
       dataIndex: "mean",
@@ -98,6 +120,27 @@ export function ResponsesTable() {
       filters: CATEGORY_FILTERS,
       filteredValue: params.categories,
       render: (value: Category) => CATEGORY_LABEL[value],
+    },
+    {
+      title: "Mood",
+      key: "sentiment",
+      width: 100,
+      filters: SENTIMENT_FILTERS,
+      filteredValue: params.sentiments,
+      render: (_, row) =>
+        row.analysis ? (
+          <Tag color={SENTIMENT_TAG_COLOR[row.analysis.sentiment]}>
+            {SENTIMENT_LABEL[row.analysis.sentiment]}
+          </Tag>
+        ) : null,
+    },
+    {
+      title: "Topic",
+      key: "topic",
+      width: 100,
+      filters: TOPIC_FILTERS,
+      filteredValue: params.topics,
+      render: (_, row) => (row.analysis ? TOPIC_LABEL[row.analysis.topic] : null),
     },
     {
       title: "Alert",
@@ -130,6 +173,8 @@ export function ResponsesTable() {
       pageSize: pagination.pageSize ?? previous.pageSize,
       categories: (filters.category ?? []).filter(isCategory),
       channels: (filters.channel ?? []).filter(isChannel),
+      sentiments: (filters.sentiment ?? []).filter(isSentiment),
+      topics: (filters.topic ?? []).filter(isTopic),
       ordering: orderingFrom(sort),
     }));
   };
@@ -160,7 +205,7 @@ export function ResponsesTable() {
           columns={columns}
           dataSource={data?.results}
           loading={isLoading || isFetching}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1180 }}
           onChange={handleChange}
           pagination={{
             current: params.page,

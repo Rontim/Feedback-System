@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "alerts",
     "stats",
     "sms",
+    "insights",
 ]
 
 MIDDLEWARE = [
@@ -127,3 +128,13 @@ SMS_INVITE_TEXT = env(
     "SMS_INVITE_TEXT",
     "Thanks for buying our paint! Rate us 1-5 for product, care and happiness. Reply e.g. 4 5 4",
 )
+
+# AI comment tagging through any OpenAI-compatible API. Default: DeepSeek hosted by NVIDIA.
+# With no key the feature is off: feedback, alerts and dashboards all work without it.
+AI_API_KEY = env("AI_API_KEY", "")
+AI_BASE_URL = env("AI_BASE_URL", "https://integrate.api.nvidia.com/v1")
+AI_MODEL = env("AI_MODEL", "deepseek-ai/deepseek-v4-flash")  # catalog names change; check yours
+AI_TIMEOUT = float(env("AI_TIMEOUT", "20"))
+AI_MAX_TOKENS = int(env("AI_MAX_TOKENS", "300"))
+# Tagging is a trivial task; skip the model's reasoning phase (faster, uses less free quota).
+AI_DISABLE_THINKING = env("AI_DISABLE_THINKING", "1") == "1"

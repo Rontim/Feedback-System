@@ -10,6 +10,8 @@ from rest_framework.views import APIView
 from alerts.models import Alert
 from feedback import scoring
 from feedback.models import Response
+from insights import services as insight_services
+from insights.models import CommentAnalysis
 
 from .projection import DailyPoint, build_projection
 
@@ -80,4 +82,45 @@ class TrendView(APIView):
 
         return DRFResponse(
             {"days": days, "series": series, "projection": build_projection(points, end=today)}
+        )
+
+
+class TopicsView(APIView):
+    """What customers talk about: AI-tagged comments in the last N days, by topic and mood."""
+
+    def get(self, request):
+        days = _parse_days(request.query_params.get("days"))
+        start = timezone.localdate() - timedelta(days=days - 1)
+        start_at = timezone.make_aware(datetime.combine(start, time.min))
+
+        counts: dict[str, dict[str, int]] = {}
+        rows = (
+            CommentAnalysis.objects.filter(response__created_at__gte=start_at)
+            .values("topic", "sentiment")
+            .annotate(n=Count("id"))
+        )
+        for row in rows:
+            topic = counts.setdefault(row["topic"], {"positive": 0, "neutral": 0, "negative": 0})
+            topic[row["sentiment"]] = row["n"]
+        topics = sorted(
+            (
+                {"topic": name, **by_sentiment, "total": sum(by_sentiment.values())}
+                for name, by_sentiment in counts.items()
+            ),
+            key=lambda item: (-item["total"], item["topic"]),
+        )
+        awaiting = (
+            Response.objects.filter(created_at__gte=start_at)
+            .exclude(comment="")
+            .filter(analysis__isnull=True)
+            .count()
+        )
+        return DRFResponse(
+            {
+                "days": days,
+                "enabled": insight_services.is_enabled(),
+                "tagged": sum(item["total"] for item in topics),
+                "awaiting": awaiting,
+                "topics": topics,
+            }
         )

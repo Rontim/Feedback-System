@@ -33,6 +33,34 @@ If no care rep has an email, `CARE_ALERT_FALLBACK_EMAIL` is used. Care reps are 
 Endpoints: `/api/alerts` (`?unread=1`, `?handled=0|1`), `PATCH /api/alerts/{id}` (`read`, `handled`),
 `/api/notifications`, `/api/notifications/read-all`, `/api/notifications/{id}/read`.
 
+## AI comment tagging (apps/api/insights)
+The optional comment box on the questionnaire is analysed in the background: each comment gets a
+**mood** (positive / neutral / negative) and a **topic** (colour, price, delivery, service, quality, other).
+Care reps see the tags in the responses table (filterable), the drill-down drawer and the alerts table, and the
+overview charts what customers talk about. It follows the brief's AI rules:
+1. *Zero effort for the customer* - nothing to write or click; it runs after the response is saved.
+2. *Fail gracefully* - tagging runs after commit in a worker thread. A timeout, a rate limit, a garbage reply or
+   a missing key leaves the comment untagged and everything else working. `tag_comments` backfills later.
+3. *Keys stay secret* - the model is called only from Django; `AI_API_KEY` lives in `.env`, never in React.
+4. *Provider choice* - the official `openai` SDK pointed at NVIDIA's OpenAI-compatible endpoint, model
+   **DeepSeek V4 Flash**. Why: free-tier access for a hackathon, one SDK that works with any OpenAI-compatible
+   provider (switch by changing `AI_BASE_URL` / `AI_MODEL`), and a small fast model is plenty for a six-label
+   classification. Thinking mode is switched off (`AI_DISABLE_THINKING=1`) so replies are quick and spend less quota.
+
+**Untrusted input.** A comment is customer text and could try to steer the model. So the reply is never trusted
+either: it must parse to exactly one value from each fixed list, otherwise it is discarded. At worst a hostile
+comment earns a wrong label; it can never put free text into the data.
+
+**Privacy.** Only the comment text is sent (never name, email or phone), but customers can type personal details
+into a comment. NVIDIA's free API is a trial service; review its terms before sending real customer data.
+
+```bash
+python manage.py ai_check                      # validates your key/model with one sample comment
+python manage.py tag_comments --limit 200      # tag comments that have no analysis (rate-limited, 1.5s apart)
+```
+Model names in NVIDIA's catalog change (it lists dated builds such as `-0731`); if `ai_check` fails with a
+"model not found" error, copy the current ID from build.nvidia.com into `AI_MODEL`.
+
 ## SMS (Africa's Talking)
 Three jobs, one gateway client (`apps/api/sms/`), every message logged in `SmsLog`:
 1. **Invites** - care reps paste numbers on the dashboard's SMS page; each gets the "rate us" text.

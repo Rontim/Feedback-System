@@ -29,16 +29,28 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "email", "phone", "type"]
 
 
+def analysis_payload(response: Response) -> dict | None:
+    """AI tags for a response's comment, or None (no comment, AI off, or tagging failed)."""
+    analysis = getattr(response, "analysis", None)  # reverse one-to-one: may not exist
+    if analysis is None:
+        return None
+    return {"sentiment": analysis.sentiment, "topic": analysis.topic}
+
+
 class ResponseDetailSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer(read_only=True)
     alert = serializers.SerializerMethodField()
+    analysis = serializers.SerializerMethodField()
 
     class Meta:
         model = Response
         fields = [
             "id", "created_at", "customer", "q_product", "q_care", "q_happy", "mean",
-            "category", "channel", "comment", "alert",
+            "category", "channel", "comment", "alert", "analysis",
         ]  # fmt: skip
+
+    def get_analysis(self, obj: Response) -> dict | None:
+        return analysis_payload(obj)
 
     def get_alert(self, obj: Response) -> dict | None:
         alert = getattr(obj, "alert", None)  # reverse one-to-one: absent for non-detractors

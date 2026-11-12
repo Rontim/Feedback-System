@@ -8,7 +8,7 @@ from .models import Alert, Notification
 from .serializers import AlertSerializer, AlertUpdateSerializer, NotificationSerializer
 from .services import update_alert_state
 
-ALERTS = Alert.objects.select_related("response__customer", "handled_by")
+ALERTS = Alert.objects.select_related("response__customer", "response__analysis", "handled_by")
 
 
 class AlertListView(generics.ListAPIView):

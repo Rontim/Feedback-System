@@ -3,6 +3,14 @@ import type { CustomerType } from "../feedback/types";
 
 export type Channel = "web" | "sms";
 export type DeliveryStatus = "pending" | "sent" | "failed" | "skipped";
+export type Sentiment = "positive" | "neutral" | "negative";
+export type Topic = "colour" | "price" | "delivery" | "service" | "quality" | "other";
+
+/** AI-assigned tags for a comment. Null when there is no comment, AI is off, or tagging failed. */
+export interface Analysis {
+  sentiment: Sentiment;
+  topic: Topic;
+}
 
 export interface Paginated<T> {
   count: number;
@@ -39,13 +47,14 @@ export interface ResponseRow {
   channel: Channel;
   comment: string;
   alert: AlertBrief | null;
+  analysis: Analysis | null;
 }
 
 export interface AlertRow {
   id: number;
   created_at: string;
   customer: CustomerDto;
-  response: Omit<ResponseRow, "customer" | "alert">;
+  response: Omit<ResponseRow, "customer" | "alert">; // includes `analysis`
   email_status: DeliveryStatus;
   sms_status: DeliveryStatus;
   read_at: string | null;
@@ -86,6 +95,22 @@ export interface TrendDto {
   days: number;
   series: TrendDay[];
   projection: Projection;
+}
+
+export interface TopicRow {
+  topic: Topic;
+  positive: number;
+  neutral: number;
+  negative: number;
+  total: number;
+}
+
+export interface TopicsDto {
+  days: number;
+  enabled: boolean;
+  tagged: number;
+  awaiting: number;
+  topics: TopicRow[];
 }
 
 export interface NotificationDto {

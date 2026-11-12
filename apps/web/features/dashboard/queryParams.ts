@@ -1,5 +1,5 @@
 import type { Category } from "../../lib/rating";
-import type { Channel } from "./types";
+import type { Channel, Sentiment, Topic } from "./types";
 
 export type ResponseOrdering = "created_at" | "-created_at" | "mean" | "-mean";
 
@@ -8,6 +8,8 @@ export interface ResponsesParams {
   pageSize: number;
   categories: Category[];
   channels: Channel[];
+  sentiments: Sentiment[];
+  topics: Topic[];
   search: string;
   from: string | null; // YYYY-MM-DD
   to: string | null;
@@ -19,6 +21,8 @@ export const DEFAULT_RESPONSES_PARAMS: ResponsesParams = {
   pageSize: 20,
   categories: [],
   channels: [],
+  sentiments: [],
+  topics: [],
   search: "",
   from: null,
   to: null,
@@ -34,6 +38,8 @@ export function buildResponsesQuery(params: ResponsesParams): string {
   });
   if (params.categories.length > 0) query.set("category", params.categories.join(","));
   if (params.channels.length > 0) query.set("channel", params.channels.join(","));
+  if (params.sentiments.length > 0) query.set("sentiment", params.sentiments.join(","));
+  if (params.topics.length > 0) query.set("topic", params.topics.join(","));
   if (params.search.trim()) query.set("q", params.search.trim());
   if (params.from) query.set("from", params.from);
   if (params.to) query.set("to", params.to);

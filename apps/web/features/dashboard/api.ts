@@ -6,11 +6,13 @@ import type {
   Paginated,
   ResponseRow,
   SummaryDto,
+  TopicsDto,
   TrendDto,
 } from "./types";
 
 export const getSummary = () => http<SummaryDto>("/api/stats/summary");
 export const getTrend = (days: number) => http<TrendDto>(`/api/stats/trend?days=${days}`);
+export const getTopics = (days: number) => http<TopicsDto>(`/api/stats/topics?days=${days}`);
 export const getResponses = (query: string) =>
   http<Paginated<ResponseRow>>(`/api/responses?${query}`);
 export const getAlerts = (query: string) => http<Paginated<AlertRow>>(`/api/alerts?${query}`);

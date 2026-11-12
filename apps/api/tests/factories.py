@@ -39,3 +39,11 @@ def make_response(
         Response.objects.filter(pk=response.pk).update(created_at=when)
         response.refresh_from_db()
     return response
+
+
+def make_analysis(response, sentiment="negative", topic="delivery", model="test-model"):
+    from insights.models import CommentAnalysis
+
+    return CommentAnalysis.objects.create(
+        response=response, sentiment=sentiment, topic=topic, model=model
+    )

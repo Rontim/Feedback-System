@@ -100,3 +100,34 @@ def _sms_settings(settings):
 @pytest.fixture
 def capture_callbacks(django_capture_on_commit_callbacks):
     return django_capture_on_commit_callbacks
+
+
+@pytest.fixture(autouse=True)
+def _ai_off_by_default(settings):
+    settings.AI_API_KEY = ""
+
+
+class FakeTagger:
+    """Stands in for the model: records every comment it is asked about."""
+
+    def __init__(self):
+        from insights.client import CommentTag
+
+        self.model = "fake-model"
+        self.result = CommentTag(sentiment="negative", topic="delivery")
+        self.error: Exception | None = None
+        self.seen: list[str] = []
+
+    def classify(self, comment):
+        self.seen.append(comment)
+        if self.error:
+            raise self.error
+        return self.result
+
+
+@pytest.fixture
+def fake_tagger(monkeypatch, settings):
+    settings.AI_API_KEY = "test-key"
+    tagger = FakeTagger()
+    monkeypatch.setattr("insights.services.get_tagger", lambda: tagger)
+    return tagger

@@ -1,6 +1,7 @@
 "use client";
 
 import { Descriptions, Drawer, Rate, Tag, Typography } from "antd";
+import { AnalysisTags } from "./AnalysisTags";
 import { CATEGORY_LABEL, CATEGORY_TAG_COLOR, formatDateTime } from "../format";
 import type { ResponseRow } from "../types";
 
@@ -61,6 +62,15 @@ export function ResponseDrawer({ response, onClose }: ResponseDrawerProps) {
             <Descriptions.Item label="Comment">
               {response.comment || <Typography.Text type="secondary">No comment</Typography.Text>}
             </Descriptions.Item>
+            {response.comment && (
+              <Descriptions.Item label="AI tags">
+                {response.analysis ? (
+                  <AnalysisTags analysis={response.analysis} />
+                ) : (
+                  <Typography.Text type="secondary">Not analysed</Typography.Text>
+                )}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Alert">
               {response.alert ? (
                 <Tag color={response.alert.handled_at ? "success" : "warning"}>

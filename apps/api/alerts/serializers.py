@@ -1,18 +1,23 @@
 from rest_framework import serializers
 
 from feedback.models import Response
-from feedback.serializers import CustomerSerializer
+from feedback.serializers import CustomerSerializer, analysis_payload
 
 from .models import Alert, Notification
 
 
 class ResponseSerializer(serializers.ModelSerializer):
+    analysis = serializers.SerializerMethodField()
+
     class Meta:
         model = Response
         fields = [
             "id", "q_product", "q_care", "q_happy", "mean", "category",
-            "channel", "comment", "created_at",
+            "channel", "comment", "created_at", "analysis",
         ]  # fmt: skip
+
+    def get_analysis(self, obj: Response) -> dict | None:
+        return analysis_payload(obj)
 
 
 class AlertSerializer(serializers.ModelSerializer):
