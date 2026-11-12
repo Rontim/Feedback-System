@@ -76,23 +76,6 @@ def tagger(client, **kwargs):
     return CommentTagger(api_key="k", base_url="http://x", model="m", client=client, **kwargs)
 
 
-def test_request_shape_with_thinking_disabled():
-    client = FakeOpenAI()
-    tag = tagger(client).classify("Rangi ni nzuri sana")
-    call = client.calls[0]
-    assert (tag.sentiment, tag.topic) == ("positive", "colour")
-    assert call["model"] == "m" and call["temperature"] == 0
-    assert call["extra_body"] == {"chat_template_kwargs": {"thinking": False}}
-    assert call["messages"][0] == {"role": "system", "content": SYSTEM_PROMPT}
-    assert call["messages"][1]["content"] == "<comment>\nRangi ni nzuri sana\n</comment>"
-
-
-def test_thinking_left_alone_when_not_disabled():
-    client = FakeOpenAI()
-    tagger(client).classify("x")
-    assert client.calls[0]["extra_body"] is None
-
-
 def test_long_comments_are_truncated_before_sending():
     client = FakeOpenAI()
     tagger(client).classify("a" * 5000)

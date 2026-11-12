@@ -12,12 +12,9 @@ def env(key: str, default: str | None = None) -> str:
 
 
 DEBUG = env("DJANGO_DEBUG", "0") == "1"
-SECRET_KEY = env("DJANGO_SECRET_KEY",
-                 "dev-only-insecure-key" if DEBUG else None)
-ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS",
-                    "localhost,127.0.0.1,api").split(",")
-CSRF_TRUSTED_ORIGINS = [o for o in env(
-    "DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-only-insecure-key" if DEBUG else None)
+ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,api").split(",")
+CSRF_TRUSTED_ORIGINS = [o for o in env("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -117,6 +114,9 @@ REST_FRAMEWORK = {
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("EMAIL_HOST", "localhost")
 EMAIL_PORT = int(env("EMAIL_PORT", "1025"))
+EMAIL_USE_TLS = env("EMAIL_USE_TLS", "0") == "1"
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "feedback@companyx.test")
 
 # Alerts
@@ -141,8 +141,7 @@ AT_SENDER_ID = env("AT_SENDER_ID", "")
 # The callback URL is /api/sms/inbound?token=<this>. Unset means the webhook rejects everything.
 AT_WEBHOOK_TOKEN = env("AT_WEBHOOK_TOKEN", "")
 SMS_HTTP_TIMEOUT = float(env("SMS_HTTP_TIMEOUT", "10"))
-SMS_MAX_RESPONSES_PER_DAY = int(
-    env("SMS_MAX_RESPONSES_PER_DAY", "5"))  # per phone, anti-spam
+SMS_MAX_RESPONSES_PER_DAY = int(env("SMS_MAX_RESPONSES_PER_DAY", "5"))  # per phone, anti-spam
 DEFAULT_COUNTRY_CODE = env("DEFAULT_COUNTRY_CODE", "254")
 # Plain ASCII keeps the message in one 160-character GSM segment.
 SMS_INVITE_TEXT = env(
