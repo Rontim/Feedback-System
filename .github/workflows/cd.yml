@@ -65,7 +65,7 @@ jobs:
             --set-secrets="DJANGO_SECRET_KEY=django-secret-key:latest,POSTGRES_PASSWORD=postgres-password:latest" \
             --set-env-vars="INSTANCE_CONNECTION_NAME=feedbacksys:us-central1:assessment-db,POSTGRES_DB=feedback,POSTGRES_USER=feedback,POSTGRES_HOST=/cloudsql/feedbacksys:us-central1:assessment-db,DJANGO_DEBUG=0,DJANGO_ALLOWED_HOSTS=*" \
             --command="python" \
-            --args="apps/manage.py,migrate" \
+            --args="manage.py,migrate" \
             --max-retries=0 || true
 
           gcloud run jobs execute django-migrate --region=us-central1 --wait
