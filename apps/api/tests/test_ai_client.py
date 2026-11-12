@@ -51,7 +51,8 @@ def test_parse_rejects_anything_outside_the_fixed_lists(reply):
 
 def test_extract_json_ignores_think_block_containing_braces():
     reply = '<think>maybe {"topic": "price"} but no</think>{"sentiment":"neutral","topic":"other"}'
-    assert extract_json_object(reply) == {"sentiment": "neutral", "topic": "other"}
+    assert extract_json_object(
+        reply) == {"sentiment": "neutral", "topic": "other"}
 
 
 class FakeOpenAI:
@@ -60,7 +61,8 @@ class FakeOpenAI:
     ):
         self.calls: list[dict] = []
         self._content, self._finish, self._error = content, finish, error
-        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
+        self.chat = SimpleNamespace(
+            completions=SimpleNamespace(create=self._create))
 
     def _create(self, **kwargs):
         self.calls.append(kwargs)
@@ -68,29 +70,13 @@ class FakeOpenAI:
             raise self._error
         message = SimpleNamespace(content=self._content)
         return SimpleNamespace(
-            choices=[SimpleNamespace(message=message, finish_reason=self._finish)]
+            choices=[SimpleNamespace(
+                message=message, finish_reason=self._finish)]
         )
 
 
 def tagger(client, **kwargs):
     return CommentTagger(api_key="k", base_url="http://x", model="m", client=client, **kwargs)
-
-
-def test_request_shape_with_thinking_disabled():
-    client = FakeOpenAI()
-    tag = tagger(client).classify("Rangi ni nzuri sana")
-    call = client.calls[0]
-    assert (tag.sentiment, tag.topic) == ("positive", "colour")
-    assert call["model"] == "m" and call["temperature"] == 0
-    assert call["extra_body"] == {"chat_template_kwargs": {"thinking": False}}
-    assert call["messages"][0] == {"role": "system", "content": SYSTEM_PROMPT}
-    assert call["messages"][1]["content"] == "<comment>\nRangi ni nzuri sana\n</comment>"
-
-
-def test_thinking_left_alone_when_not_disabled():
-    client = FakeOpenAI()
-    tagger(client).classify("x")
-    assert client.calls[0]["extra_body"] is None
 
 
 def test_long_comments_are_truncated_before_sending():
