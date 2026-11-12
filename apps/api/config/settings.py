@@ -64,16 +64,30 @@ TEMPLATES = [
     }
 ]
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", "feedback"),
-        "USER": env("POSTGRES_USER", "feedback"),
-        "PASSWORD": env("POSTGRES_PASSWORD", "feedback"),
-        "HOST": env("POSTGRES_HOST", "localhost"),
-        "PORT": env("POSTGRES_PORT", "5432"),
+INSTANCE_CONNECTION_NAME = env("INSTANCE_CONNECTION_NAME", "")
+
+if INSTANCE_CONNECTION_NAME:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB", "feedback"),
+            "USER": env("POSTGRES_USER", "feedback"),
+            "PASSWORD": env("POSTGRES_PASSWORD", "feedback"),
+            "HOST": f"/cloudsql/{INSTANCE_CONNECTION_NAME}",
+            "PORT": "",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB", "feedback"),
+            "USER": env("POSTGRES_USER", "feedback"),
+            "PASSWORD": env("POSTGRES_PASSWORD", "feedback"),
+            "HOST": env("POSTGRES_HOST", "localhost"),
+            "PORT": env("POSTGRES_PORT", "5432"),
+        }
+    }
 
 AUTH_USER_MODEL = "accounts.User"
 LANGUAGE_CODE = "en-us"
@@ -142,3 +156,9 @@ AI_BASE_URL = env("AI_BASE_URL", "")
 AI_MODEL = env("AI_MODEL", "")
 AI_TIMEOUT = float(env("AI_TIMEOUT", "20"))
 AI_MAX_TOKENS = int(env("AI_MAX_TOKENS", "300"))
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
