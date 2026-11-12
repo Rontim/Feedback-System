@@ -12,9 +12,12 @@ def env(key: str, default: str | None = None) -> str:
 
 
 DEBUG = env("DJANGO_DEBUG", "0") == "1"
-SECRET_KEY = env("DJANGO_SECRET_KEY", "dev-only-insecure-key" if DEBUG else None)
-ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,api").split(",")
-CSRF_TRUSTED_ORIGINS = [o for o in env("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+SECRET_KEY = env("DJANGO_SECRET_KEY",
+                 "dev-only-insecure-key" if DEBUG else None)
+ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS",
+                    "localhost,127.0.0.1,api").split(",")
+CSRF_TRUSTED_ORIGINS = [o for o in env(
+    "DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -114,14 +117,18 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
 
 # SMS (Africa's Talking). With no API key, SMS is skipped and everything else keeps working.
-AT_USERNAME = env("AT_USERNAME", "sandbox")  # must be "sandbox" for the sandbox environment
+# must be "sandbox" for the sandbox environment
+AT_USERNAME = env("AT_USERNAME", "sandbox")
 AT_API_KEY = env("AT_API_KEY", "")
-AT_BASE_URL = env("AT_BASE_URL", "")  # override the gateway endpoint (staging, local stand-in)
-AT_SENDER_ID = env("AT_SENDER_ID", "")  # shortcode or alphanumeric sender id, optional
+# override the gateway endpoint (staging, local stand-in)
+AT_BASE_URL = env("AT_BASE_URL", "")
+# shortcode or alphanumeric sender id, optional
+AT_SENDER_ID = env("AT_SENDER_ID", "")
 # The callback URL is /api/sms/inbound?token=<this>. Unset means the webhook rejects everything.
 AT_WEBHOOK_TOKEN = env("AT_WEBHOOK_TOKEN", "")
 SMS_HTTP_TIMEOUT = float(env("SMS_HTTP_TIMEOUT", "10"))
-SMS_MAX_RESPONSES_PER_DAY = int(env("SMS_MAX_RESPONSES_PER_DAY", "5"))  # per phone, anti-spam
+SMS_MAX_RESPONSES_PER_DAY = int(
+    env("SMS_MAX_RESPONSES_PER_DAY", "5"))  # per phone, anti-spam
 DEFAULT_COUNTRY_CODE = env("DEFAULT_COUNTRY_CODE", "254")
 # Plain ASCII keeps the message in one 160-character GSM segment.
 SMS_INVITE_TEXT = env(
@@ -129,8 +136,7 @@ SMS_INVITE_TEXT = env(
     "Thanks for buying our paint! Rate us 1-5 for product, care and happiness. Reply e.g. 4 5 4",
 )
 
-# AI comment tagging through any OpenAI-compatible API. Default: DeepSeek hosted by NVIDIA.
-# With no key the feature is off: feedback, alerts and dashboards all work without it.
+
 AI_API_KEY = env("AI_API_KEY", "")
 AI_BASE_URL = env("AI_BASE_URL", "")
 AI_MODEL = env("AI_MODEL", "")
