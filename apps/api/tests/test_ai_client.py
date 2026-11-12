@@ -89,7 +89,7 @@ def test_request_shape_with_thinking_disabled():
 
 def test_thinking_left_alone_when_not_disabled():
     client = FakeOpenAI()
-    tagger(client, disable_thinking=False).classify("x")
+    tagger(client).classify("x")
     assert client.calls[0]["extra_body"] is None
 
 

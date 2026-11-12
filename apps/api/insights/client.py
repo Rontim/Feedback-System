@@ -103,15 +103,11 @@ class CommentTagger:
         self.model = model
         self.max_tokens = max_tokens
         self.disable_thinking = disable_thinking
-        # One retry covers a blip; more would hold a worker thread hostage on a rate-limited key.
         self._client = client or OpenAI(
             api_key=api_key, base_url=base_url, timeout=timeout, max_retries=1
         )
 
     def classify(self, comment: str) -> CommentTag:
-        extra_body = (
-            {"chat_template_kwargs": {"thinking": False}} if self.disable_thinking else None
-        )
         try:
             completion = self._client.chat.completions.create(
                 model=self.model,
@@ -124,12 +120,12 @@ class CommentTagger:
                 ],
                 temperature=0,
                 max_tokens=self.max_tokens,
-                extra_body=extra_body,
+
             )
             choice = completion.choices[0]
             content = choice.message.content or ""
             finish_reason = choice.finish_reason
-        except Exception as exc:  # SDK errors, timeouts, malformed envelopes: all mean "no tag"
+        except Exception as exc:    
             raise AiError(f"{type(exc).__name__}: {exc}") from exc
         if finish_reason == "length" and not content.strip():
             raise AiError("The model ran out of tokens before answering (is thinking enabled?)")
