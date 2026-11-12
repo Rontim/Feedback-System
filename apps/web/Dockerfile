@@ -7,7 +7,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 FROM base AS build
-ARG API_URL=http://api:8000
+ARG API_URL=https://feedback-api-nwcj3afvoq-uc.a.run.app
 ENV API_URL=$API_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
