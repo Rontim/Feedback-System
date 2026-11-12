@@ -3,6 +3,7 @@ name: CD
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,6 +13,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    name: Test and build Docker image
+    uses: ./.github/workflows/ci.yml
+
   deploy-production:
     runs-on: ubuntu-latest
     environment:
