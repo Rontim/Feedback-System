@@ -4,6 +4,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
+RUN test -f /app/manage.py
 RUN useradd -m app && chown -R app /app
 USER app
 EXPOSE 8000
