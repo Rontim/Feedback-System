@@ -59,7 +59,7 @@ jobs:
           gcloud run jobs deploy django-migrate \
             --image=us-central1-docker.pkg.dev/feedbacksys/feedback-repo/api:latest \
             --region=us-central1 \
-            --add-cloudsql-instances=feedbacksys:us-central1:assessment-db \
+            --set-cloudsql-instances=feedbacksys:us-central1:assessment-db \
             --set-secrets="DJANGO_SECRET_KEY=django-env-vars:latest,POSTGRES_PASSWORD=django-env-vars:latest" \
             --set-env-vars="INSTANCE_CONNECTION_NAME=feedbacksys:us-central1:assessment-db" \
             --command="python" \
