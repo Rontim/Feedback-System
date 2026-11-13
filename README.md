@@ -112,8 +112,20 @@ daily trend with a 7-day projection), Responses (server-side filtering, sorting 
 per-question drill-down drawer) and Alerts (open/handled, mark handled, contact details). Data refreshes
 every 5 seconds; a new unread alert raises a toast and updates the bell.
 
-Demo data: `python manage.py seed_demo --reset` creates ~30 days of responses, alerts and a care rep
-(`demo` / `demo-pass-123`). It only touches rows whose email ends in `@seed.example`.
+Demo data: `python manage.py seed_demo` creates up to 21 days of responses, with at least one
+commented detractor and alert on each day, plus a care rep (`demo` / `demo-pass-123`). To call the AI
+for every seeded comment and actually deliver each alert to the configured care team, run:
+
+```bash
+python manage.py seed_demo --tag-comments --send-alerts \
+  --rep-email=care@example.com --rep-phone=+254700000000
+```
+
+`--tag-comments` requires `AI_API_KEY` and waits 1.5 seconds between model calls by default
+(`--ai-sleep=0` disables the delay). `--send-alerts` can send real email/SMS to active care reps;
+configure the intended recipients and SMS provider before using it. Use `--reset` only when you
+intend to delete and recreate existing `@seed.example` demo rows; combining it with `--send-alerts`
+will send those alerts again.
 
 **Projection method.** Weighted least-squares line through the daily mean score (weight = that day's
 response count), days with no responses left out, extended 7 days and clamped to 1-5. With fewer than
