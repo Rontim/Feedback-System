@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Flex, Segmented, Table, Tag, Typography } from "antd";
+import { Card, Flex, Segmented, Table, Tag, Tooltip, Typography } from "antd";
 import type { TableColumnsType } from "antd";
 import { useState } from "react";
 import { formatDateTime } from "../../dashboard/format";
@@ -53,9 +53,19 @@ export function SmsLogTable() {
       dataIndex: "body",
       ellipsis: true,
       render: (value: string, row) => (
-        <Flex vertical>
+        <Flex vertical gap={2}>
           <Typography.Text ellipsis={{ tooltip: value }}>{value}</Typography.Text>
-          {row.error && <Typography.Text type="danger">{row.error}</Typography.Text>}
+          {row.error && (
+            <Tooltip title={row.error} placement="topLeft">
+              <Typography.Text
+                type="danger"
+                ellipsis
+                style={{ fontSize: 12, cursor: "help", maxWidth: 280, display: "inline-block" }}
+              >
+                Failed: {row.error}
+              </Typography.Text>
+            </Tooltip>
+          )}
         </Flex>
       ),
     },

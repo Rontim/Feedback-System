@@ -57,7 +57,17 @@ export function TopicsChart() {
                 <CartesianGrid stroke={token.colorBorderSecondary} horizontal={false} />
                 <XAxis type="number" allowDecimals={false} stroke={token.colorTextSecondary} />
                 <YAxis type="category" dataKey="label" width={72} stroke={token.colorTextSecondary} />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: token.colorBgElevated,
+                    borderColor: token.colorBorderSecondary,
+                    borderRadius: 8,
+                    color: token.colorText,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  }}
+                  itemStyle={{ color: token.colorText }}
+                  labelStyle={{ color: token.colorTextSecondary }}
+                />
                 <Legend />
                 <Bar dataKey="negative" name="Negative" stackId="mood" fill={token.colorError} isAnimationActive={false} />
                 <Bar dataKey="neutral" name="Neutral" stackId="mood" fill={token.colorBorder} isAnimationActive={false} />
