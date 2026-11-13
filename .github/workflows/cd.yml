@@ -103,6 +103,7 @@ jobs:
             DJANGO_ALLOWED_HOSTS=feedback-api-nwcj3afvoq-uc.a.run.app,feedback-web-nwcj3afvoq-uc.a.run.app
             DJANGO_CSRF_TRUSTED_ORIGINS=https://feedback-web-nwcj3afvoq-uc.a.run.app,https://feedback-api-nwcj3afvoq-uc.a.run.app
             TIME_ZONE=Africa/Nairobi
+            DASHBOARD_URL=https://feedback-web-nwcj3afvoq-uc.a.run.app/dashboard
             EMAIL_HOST=smtp.gmail.com
             EMAIL_PORT=587
             EMAIL_USE_TLS=1

@@ -32,16 +32,18 @@ def build_alert_email(alert: Alert, recipients: list[str]) -> EmailMessage:
         "",
         "Scores (1-5)",
     ]
-    lines += [f"  {label}: {getattr(response, field)}" for field, label in QUESTION_LABELS]
+    lines += [f"  {label}: {getattr(response, field)}" for field,
+              label in QUESTION_LABELS]
     lines.append(f"  Mean: {response.mean}")
     if response.comment.strip():
         lines += ["", "Comment:", response.comment.strip()]
-    lines += ["", f"Open in dashboard: {settings.DASHBOARD_URL}?alert={alert.pk}"]
+    lines += ["",
+              f"Open in dashboard: {settings.DASHBOARD_URL}/alerts?alert={alert.pk}"]
 
     return EmailMessage(
         subject=f"[Detractor alert] {display_name} scored {response.mean}/5",
         body="\n".join(lines),
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=f"Feedback System Alert<{settings.DEFAULT_FROM_EMAIL}>",
         to=recipients,
         # Replying to the alert goes straight to the customer.
         reply_to=[customer.email] if customer.email else None,
