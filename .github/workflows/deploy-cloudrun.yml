@@ -131,14 +131,15 @@ jobs:
             EMAIL_HOST_USER=email-host-user:latest
             DEFAULT_FROM_EMAIL=default-from-email:latest
             CARE_ALERT_FALLBACK_EMAIL=default-from-email:latest
+          # Escape commas in values because deploy-cloudrun parses comma-delimited KEY=VALUE input.
           env_vars: |
             INSTANCE_CONNECTION_NAME=${{ env.INSTANCE_CONNECTION_NAME }}
             POSTGRES_DB=${{ env.DATABASE_NAME }}
             POSTGRES_USER=feedback
             POSTGRES_HOST=/cloudsql/${{ env.INSTANCE_CONNECTION_NAME }}
             DJANGO_DEBUG=0
-            DJANGO_ALLOWED_HOSTS=${{ env.API_HOST }},${{ env.WEB_HOST }}
-            DJANGO_CSRF_TRUSTED_ORIGINS=${{ env.API_URL }},${{ env.WEB_URL }}
+            DJANGO_ALLOWED_HOSTS=${{ env.API_HOST }}\,${{ env.WEB_HOST }}
+            DJANGO_CSRF_TRUSTED_ORIGINS=${{ env.API_URL }}\,${{ env.WEB_URL }}
             TIME_ZONE=Africa/Nairobi
             DASHBOARD_URL=${{ env.WEB_URL }}/dashboard
             EMAIL_HOST=smtp.gmail.com
