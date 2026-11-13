@@ -40,10 +40,20 @@ def test_email_goes_to_care_team_with_customer_details(care_rep, post_feedback):
         "Painter",
         "Product experience: 2",
         "Delivery was late",
-        "https://dash.test/dashboard?alert=",
+        "https://dash.test/dashboard/alerts?alert=",
     ):
         assert expected in msg.body
     assert Alert.objects.get().email_status == DeliveryStatus.SENT
+
+
+def test_email_includes_branded_html_and_escaped_customer_comment(care_rep, post_feedback):
+    post_feedback(comment="<script>alert('x')</script>")
+    html = mail.outbox[0].alternatives[0][0]
+    assert "#C85A32" in html
+    assert "#FAF8F5" in html
+    assert "Open alert in dashboard" in html
+    assert "&lt;script&gt;alert(&#x27;x&#x27;)&lt;/script&gt;" in html
+    assert "<script>" not in html
 
 
 def test_newlines_in_name_cannot_break_the_subject(care_rep, post_feedback):
