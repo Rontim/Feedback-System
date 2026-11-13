@@ -51,22 +51,18 @@ def send_sms(phones: list[str], message: str, *, kind: str, response=None) -> li
 
     client = get_client()
     if client is None:
-        outcomes = {p: SendOutcome(
-            p, "skipped", "SMS gateway not configured") for p in unique}
+        outcomes = {p: SendOutcome(p, "skipped", "SMS gateway not configured") for p in unique}
     else:
         try:
-            results = {normalize_phone(
-                r.number): r for r in client.send(unique, message)}
+            results = {normalize_phone(r.number): r for r in client.send(unique, message)}
         except SmsGatewayError as exc:
             logger.warning("SMS send failed: %s", exc)
-            outcomes = {p: SendOutcome(p, "failed", str(exc)[
-                                       :500]) for p in unique}
+            outcomes = {p: SendOutcome(p, "failed", str(exc)[:500]) for p in unique}
         else:
             for phone in unique:
                 result = results.get(phone)
                 if result is None:
-                    outcomes[phone] = SendOutcome(
-                        phone, "failed", "No result for this number")
+                    outcomes[phone] = SendOutcome(phone, "failed", "No result for this number")
                 elif result.accepted:
                     outcomes[phone] = SendOutcome(phone, "sent")
                     provider[phone] = (result.status_code, result.message_id)
@@ -83,8 +79,7 @@ def send_sms(phones: list[str], message: str, *, kind: str, response=None) -> li
                 phone=outcome.phone,
                 body=message,
                 status=outcome.status,
-                provider_status_code=provider.get(
-                    outcome.phone, (None, ""))[0],
+                provider_status_code=provider.get(outcome.phone, (None, ""))[0],
                 provider_message_id=provider.get(outcome.phone, (None, ""))[1],
                 error=outcome.error,
                 response=response,
