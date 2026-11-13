@@ -2,7 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [staging]
+    # Main pushes run this workflow through CD before deployment.
+    branches-ignore: [main]
+  pull_request:
+    branches: [main, staging]
   workflow_call:
 
 concurrency:

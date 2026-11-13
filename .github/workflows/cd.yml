@@ -9,113 +9,47 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-production
+  group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   test:
     uses: ./.github/workflows/ci.yml
 
-  deploy:
-    runs-on: ubuntu-latest
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
     needs: test
-    environment:
-      name: production
-    #   url: https://feedback-api-uc.a.run.app
     permissions:
-      contents: "read"
-      id-token: "write"
-    steps:
-      - name: Checkout code at merge commit
-        uses: actions/checkout@v6
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-cloudrun.yml
+    with:
+      deployment_environment: staging
+      database_name: feedback_staging
+      migration_job: django-migrate-staging
+      api_service: feedback-api-staging
+      web_service: feedback-web-staging
+      api_url: https://feedback-api-staging-nwcj3afvoq-uc.a.run.app
+      web_url: https://feedback-web-staging-nwcj3afvoq-uc.a.run.app
+      api_host: feedback-api-staging-nwcj3afvoq-uc.a.run.app
+      web_host: feedback-web-staging-nwcj3afvoq-uc.a.run.app
+    secrets: inherit
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v3
-
-      - name: Configure Docker to use Artifact Registry
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # --- 1. BUILD & PUSH IMAGES ---
-      - name: Build and Push API Image
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/api
-          push: true
-          tags: us-central1-docker.pkg.dev/feedbacksys/feedback-repo/api:latest
-
-      - name: Build and Push Web Image
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/web
-          push: true
-          tags: us-central1-docker.pkg.dev/feedbacksys/feedback-repo/web:latest
-
-      - name: Run Database Migrations
-        run: |
-          gcloud run jobs deploy django-migrate \
-            --image=us-central1-docker.pkg.dev/feedbacksys/feedback-repo/api:latest \
-            --region=us-central1 \
-            --set-cloudsql-instances=feedbacksys:us-central1:assessment-db \
-            --set-secrets="DJANGO_SECRET_KEY=django-secret-key:latest,POSTGRES_PASSWORD=postgres-password:latest" \
-            --set-env-vars="INSTANCE_CONNECTION_NAME=feedbacksys:us-central1:assessment-db,POSTGRES_DB=feedback,POSTGRES_USER=feedback,POSTGRES_HOST=/cloudsql/feedbacksys:us-central1:assessment-db,DJANGO_DEBUG=0,DJANGO_ALLOWED_HOSTS=*" \
-            --command="python" \
-            --args="manage.py,migrate" \
-            --max-retries=0 || true
-
-          gcloud run jobs execute django-migrate --region=us-central1 --wait
-
-      - name: Deploy API to Cloud Run
-        id: deploy-api
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: feedback-api
-          image: us-central1-docker.pkg.dev/feedbacksys/feedback-repo/api:latest
-          region: us-central1
-          flags: "--allow-unauthenticated --add-cloudsql-instances=feedbacksys:us-central1:assessment-db --port=8000"
-          secrets: |
-            DJANGO_SECRET_KEY=django-secret-key:latest
-            POSTGRES_PASSWORD=postgres-password:latest
-            AT_API_KEY=at-api-key:latest
-            AI_API_KEY=ai-api-key:latest
-            AI_BASE_URL=ai-base-url:latest
-            AI_MODEL=ai-model:latest
-            AT_WEBHOOK_TOKEN=at-webhook-token:latest
-            AT_SENDER_ID=at-sender-id:latest
-            EMAIL_HOST_PASSWORD=email-host-password:latest
-            EMAIL_HOST_USER=email-host-user:latest
-            DEFAULT_FROM_EMAIL=default-from-email:latest
-            CARE_ALERT_FALLBACK_EMAIL=default-from-email:latest
-          env_vars: |
-            INSTANCE_CONNECTION_NAME=feedbacksys:us-central1:assessment-db
-            POSTGRES_DB=feedback
-            POSTGRES_USER=feedback
-            POSTGRES_HOST=/cloudsql/feedbacksys:us-central1:assessment-db
-            DJANGO_DEBUG=0
-            DJANGO_ALLOWED_HOSTS=feedback-api-nwcj3afvoq-uc.a.run.app,feedback-web-nwcj3afvoq-uc.a.run.app
-            DJANGO_CSRF_TRUSTED_ORIGINS=https://feedback-web-nwcj3afvoq-uc.a.run.app,https://feedback-api-nwcj3afvoq-uc.a.run.app
-            TIME_ZONE=Africa/Nairobi
-            DASHBOARD_URL=https://feedback-web-nwcj3afvoq-uc.a.run.app/dashboard
-            EMAIL_HOST=smtp.gmail.com
-            EMAIL_PORT=587
-            EMAIL_USE_TLS=1
-            AT_USERNAME=sandbox
-
-      # --- 4. DEPLOY FRONTEND TO CLOUD RUN ---
-      - name: Deploy Web to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: feedback-web
-          image: us-central1-docker.pkg.dev/feedbacksys/feedback-repo/web:latest
-          region: us-central1
-          flags: "--allow-unauthenticated --port=3000"
-          env_vars: |
-            API_URL=https://feedback-api-nwcj3afvoq-uc.a.run.app
+  deploy-production:
+    if: github.ref == 'refs/heads/main'
+    needs: deploy-staging
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-cloudrun.yml
+    with:
+      deployment_environment: production
+      database_name: feedback
+      migration_job: django-migrate
+      api_service: feedback-api
+      web_service: feedback-web
+      api_url: https://feedback-api-nwcj3afvoq-uc.a.run.app
+      web_url: https://feedback-web-nwcj3afvoq-uc.a.run.app
+      api_host: feedback-api-nwcj3afvoq-uc.a.run.app
+      web_host: feedback-web-nwcj3afvoq-uc.a.run.app
+    secrets: inherit
