@@ -89,6 +89,7 @@ jobs:
             AI_BASE_URL=ai-base-url:latest
             AI_MODEL=ai-model:latest
             AT_WEBHOOK_TOKEN=at-webhook-token:latest
+            AT_SENDER_ID=at-sender-id:latest
             EMAIL_HOST_PASSWORD=email-host-password:latest
             EMAIL_HOST_USER=email-host-user:latest
             DEFAULT_FROM_EMAIL=default-from-email:latest
