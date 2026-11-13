@@ -31,7 +31,8 @@ def care_team_emails() -> list[str]:
 
 
 def care_team_phones() -> list[str]:
-    phones = {normalize_phone(rep.phone) for rep in active_care_reps() if rep.phone}
+    phones = {normalize_phone(rep.phone)
+              for rep in active_care_reps() if rep.phone}
     return sorted(p for p in phones if is_e164(p))
 
 
@@ -46,11 +47,13 @@ def raise_alert(response: Response) -> Alert | None:
             alert = Alert.objects.create(
                 response=response,
                 sms_status=(
-                    DeliveryStatus.PENDING if sms_gateway.is_enabled() else DeliveryStatus.SKIPPED
+                    DeliveryStatus.PENDING if sms_gateway.is_enabled(
+                    ) and not sms_gateway.is_sandbox() else DeliveryStatus.SKIPPED
                 ),
             )
             Notification.objects.bulk_create(
-                [Notification(rep=rep, alert=alert) for rep in active_care_reps()]
+                [Notification(rep=rep, alert=alert)
+                 for rep in active_care_reps()]
             )
     except Exception:
         logger.exception("Could not create alert for response %s", response.pk)
@@ -61,14 +64,16 @@ def raise_alert(response: Response) -> Alert | None:
 
 def deliver_alert(alert_id: int) -> None:
     """Email and SMS are independent: one channel failing never blocks the other."""
-    alert = Alert.objects.select_related("response__customer").filter(pk=alert_id).first()
+    alert = Alert.objects.select_related(
+        "response__customer").filter(pk=alert_id).first()
     if alert is None:
         return
     for channel in (deliver_email, deliver_sms):
         try:
             channel(alert)
         except Exception:
-            logger.exception("Alert %s: %s crashed", alert.pk, channel.__name__)
+            logger.exception("Alert %s: %s crashed",
+                             alert.pk, channel.__name__)
 
 
 def deliver_email(alert: Alert) -> None:
@@ -111,11 +116,14 @@ def deliver_sms(alert: Alert) -> None:
     outcomes = sms_gateway.send_sms(
         phones, build_alert_sms(alert), kind=SmsLog.Kind.ALERT, response=alert.response
     )
-    failures = [f"{o.phone}: {o.error}" for o in outcomes if o.status != "sent"]
+    failures = [
+        f"{o.phone}: {o.error}" for o in outcomes if o.status != "sent"]
     if len(failures) < len(outcomes):
-        alert.sms_status, alert.sms_error = DeliveryStatus.SENT, "; ".join(failures)[:500]
+        alert.sms_status, alert.sms_error = DeliveryStatus.SENT, "; ".join(failures)[
+            :500]
     else:
-        alert.sms_status, alert.sms_error = DeliveryStatus.FAILED, "; ".join(failures)[:500]
+        alert.sms_status, alert.sms_error = DeliveryStatus.FAILED, "; ".join(failures)[
+            :500]
     alert.save(update_fields=["sms_status", "sms_error", "sms_attempts"])
 
 
@@ -135,5 +143,6 @@ def update_alert_state(
         alert.read_at = None
     alert.save(update_fields=["read_at", "handled_at", "handled_by"])
     if alert.read_at is not None:
-        Notification.objects.filter(alert=alert, rep=rep, read_at__isnull=True).update(read_at=now)
+        Notification.objects.filter(
+            alert=alert, rep=rep, read_at__isnull=True).update(read_at=now)
     return alert
