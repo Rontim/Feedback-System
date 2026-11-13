@@ -1,13 +1,19 @@
 # Company X Feedback System (Devthon)
 
-Django + DRF API, Next.js (TypeScript) web app, PostgreSQL, Mailpit for local email.
+A full-stack feedback system for Company X's paint customers. Homeowners can leave feedback
+through a phone-friendly web questionnaire; painters can use the web form or an SMS flow that
+works with feature phones. Care reps use a dashboard to review responses, follow up on detractors,
+and understand trends in ratings and customer comments.
+
+The application uses a Django REST Framework API, a Next.js and TypeScript frontend, PostgreSQL,
+and Africa's Talking for SMS. Local email is captured by Mailpit.
 
 ## Run the development environment
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
-- Web: http://localhost:3000  ·  API: http://localhost:8000
+- Web: http://localhost:3006  ·  API: http://localhost:8000
 - Mailpit inbox: http://localhost:8025  ·  Django admin: http://localhost:8000/admin
 
 Create the Django admin account with `docker compose exec api python manage.py createsuperuser`.
@@ -30,16 +36,19 @@ cd apps/web && pnpm install && pnpm test
 ```
 
 ## Alerts (apps/api/alerts)
-A detractor response creates an `Alert` and one in-app `Notification` per active care rep in the
-same transaction as the response. After commit, a background thread emails the care team (name,
-email, phone, per-question scores, comment; `Reply-To` is the customer). Email status is tracked
-on the alert (`pending/sent/failed`), so a mail outage never loses feedback and can be recovered:
+Both the web questionnaire and SMS replies use the same feedback submission path. A detractor
+response creates an `Alert` and one in-app `Notification` per active care rep in the same
+transaction as the response. After commit, a background worker sends email and, when configured,
+SMS to the care team. Email includes the customer's contact details, scores and comment, with the
+customer as `Reply-To`. Delivery status is stored on the alert, so a failed message does not lose
+the feedback and can be retried:
 
 ```bash
 docker compose exec api python manage.py retry_failed_alerts
 ```
 If no care rep has an email, `CARE_ALERT_FALLBACK_EMAIL` is used. Care reps are users with
-`is_care_rep=True` (create via `createsuperuser` or the Django admin). Auth is session-based:
+`is_care_rep=True`, created through Django admin. A `createsuperuser` account is an administrator,
+not a care rep. Auth is session-based:
 `GET /api/auth/csrf`, then `POST /api/auth/login` with an `X-CSRFToken` header.
 Endpoints: `/api/alerts` (`?unread=1`, `?handled=0|1`), `PATCH /api/alerts/{id}` (`read`, `handled`),
 `/api/notifications`, `/api/notifications/read-all`, `/api/notifications/{id}/read`.
@@ -53,24 +62,24 @@ overview charts what customers talk about. It follows the brief's AI rules:
 2. *Fail gracefully* - tagging runs after commit in a worker thread. A timeout, a rate limit, a garbage reply or
    a missing key leaves the comment untagged and everything else working. `tag_comments` backfills later.
 3. *Keys stay secret* - the model is called only from Django; `AI_API_KEY` lives in `.env`, never in React.
-4. *Provider choice* - the official `openai` SDK pointed at NVIDIA's OpenAI-compatible endpoint, model
-   **DeepSeek V4 Flash**. Why: free-tier access for a hackathon, one SDK that works with any OpenAI-compatible
-   provider (switch by changing `AI_BASE_URL` / `AI_MODEL`), and a small fast model is plenty for a six-label
-   classification. Thinking mode is switched off (`AI_DISABLE_THINKING=1`) so replies are quick and spend less quota.
+4. *Provider choice* - the official `openai` SDK pointed at Google's OpenAI-compatible Generative Language
+   API, using `gemini-3.5-flash-lite`. The endpoint, model, and key are configured with `AI_BASE_URL`,
+   `AI_MODEL`, and `AI_API_KEY`, so provider settings stay on the Django backend. Requests use
+   `temperature=0` and a token limit to keep the six-label classification focused and predictable.
 
 **Untrusted input.** A comment is customer text and could try to steer the model. So the reply is never trusted
-either: it must parse to exactly one value from each fixed list, otherwise it is discarded. At worst a hostile
-comment earns a wrong label; it can never put free text into the data.
+either: its sentiment and topic must match the fixed label sets, otherwise the result is discarded. At worst a
+hostile comment earns a wrong label; model-generated free text is never stored.
 
 **Privacy.** Only the comment text is sent (never name, email or phone), but customers can type personal details
-into a comment. NVIDIA's free API is a trial service; review its terms before sending real customer data.
+into a comment. Review Google's API terms and data handling before sending real customer feedback.
 
 ```bash
 python manage.py ai_check                      # validates your key/model with one sample comment
 python manage.py tag_comments --limit 200      # tag comments that have no analysis (rate-limited, 1.5s apart)
 ```
-Model names in NVIDIA's catalog change (it lists dated builds such as `-0731`); if `ai_check` fails with a
-"model not found" error, copy the current ID from build.nvidia.com into `AI_MODEL`.
+If `ai_check` reports a "model not found" error, verify the model ID available to your Google API project and
+that `AI_BASE_URL` is Google's OpenAI-compatible endpoint, then update the corresponding environment values.
 
 ## SMS (Africa's Talking)
 Three jobs, one gateway client (`apps/api/sms/`), every message logged in `SmsLog`:
@@ -121,8 +130,48 @@ optional comment, and an AntD `Result` on success. Form field names match the AP
 The browser only calls same-origin `/api/*`; Next rewrites it to Django (`API_URL`).
 
 ## Scoring
-Mean of three 1-5 answers. Classified on the integer sum (<9 detractor, 9 passive, >9 promoter)
-so the "exactly 3.00" rule is immune to float error. Implemented in `apps/api/feedback/scoring.py`.
+Each response contains three integer ratings from 1 to 5: product experience, customer care, and
+happiness with the product. The API validates the range, calculates the mean using `Decimal`, and
+rounds it to two decimal places. Classification uses the integer sum rather than a floating-point
+comparison:
 
-## Design decisions
-_To be completed: AI provider choice, SMS flow, projection method._
+- Sum below 9: detractor; this triggers follow-up alerts.
+- Sum equal to 9: passive (exactly 3.00).
+- Sum above 9: promoter.
+
+Web submissions and SMS replies both call `submit_feedback()`, which saves the customer and
+response atomically. Alert creation runs in a savepoint so an alerting failure cannot discard the
+customer's response. Email and SMS delivery run after the transaction commits and fail
+independently. The alert records delivery attempts and status; `retry_failed_alerts` can retry
+failed deliveries. See `apps/api/feedback/services.py`, `apps/api/feedback/scoring.py`, and
+`apps/api/alerts/services.py`.
+
+## Deployment pipeline
+The GitHub Actions workflows are in `.github/workflows/`:
+
+1. **CI** runs on pushes to branches other than `main` and on pull requests into `main` or
+   `staging`. It runs Ruff and frontend lint/type checks, API and web tests, checks for missing
+   Django migrations, and builds both Docker images. A push to `main` runs the same CI workflow as
+   a prerequisite of CD.
+2. **Staging** deploys automatically after CI succeeds on a push to `main`. The workflow builds and
+   tags API and web images with the commit SHA, migrates the `feedback_staging` database, then
+   deploys `feedback-api-staging` and `feedback-web-staging` to Cloud Run. The web image is built
+   with the staging API URL. Pushing to the `staging` branch runs CI but does not deploy.
+3. **Production** is a deliberate manual deployment. After verifying the latest `main` commit in
+   staging, open **Actions → CD → Run workflow**, select `main`, and enable **Deploy the tested
+   main commit to production**. CI runs again; if it passes, the workflow migrates the `feedback`
+   database and deploys the production API and web services. Migration failures fail the job and
+   stop deployment.
+
+Staging and production use the Cloud SQL instance `feedbacksys:us-central1:assessment-db` but
+separate databases. The GitHub repository variables `GCP_WORKLOAD_IDENTITY_PROVIDER` and
+`GCP_SERVICE_ACCOUNT` configure workload identity. The deployment workflow reads application
+credentials from Google Secret Manager; secrets are referenced by name in
+`.github/workflows/deploy-cloudrun.yml` and must exist in the `feedbacksys` project.
+For Cloud Run AI tagging, keep the `ai-api-key`, `ai-base-url`, and `ai-model` secret values aligned
+with the local AI configuration; changing `.env` does not update deployed services.
+
+For a sole contributor, the production `production` GitHub Environment must not require a separate
+reviewer: the manual workflow dispatch is the release gate. If required reviewers are enabled,
+GitHub will pause the job for an approver. Dependency and secret scanning jobs are not currently
+included in CI.
