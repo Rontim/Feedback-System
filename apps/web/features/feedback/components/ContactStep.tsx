@@ -10,7 +10,7 @@ interface ContactStepProps {
 
 const CUSTOMER_OPTIONS: { label: string; value: CustomerType }[] = [
   { label: "Homeowner", value: "homeowner" },
-  { label: "Painter / Contractor", value: "painter" },
+  { label: "Painter", value: "painter" },
 ];
 
 export function ContactStep({ isDark = false }: ContactStepProps) {
