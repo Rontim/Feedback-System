@@ -50,7 +50,16 @@ export function CategoryDonut({ data, loading }: CategoryDonutProps) {
                     <Cell key={slice.category} fill={fills[slice.category]} stroke="none" />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: token.colorBgElevated,
+                    borderColor: token.colorBorderSecondary,
+                    borderRadius: 8,
+                    color: token.colorText,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  }}
+                  itemStyle={{ color: token.colorText }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>

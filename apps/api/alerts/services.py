@@ -46,7 +46,9 @@ def raise_alert(response: Response) -> Alert | None:
             alert = Alert.objects.create(
                 response=response,
                 sms_status=(
-                    DeliveryStatus.PENDING if sms_gateway.is_enabled() else DeliveryStatus.SKIPPED
+                    DeliveryStatus.PENDING
+                    if sms_gateway.is_enabled() and not sms_gateway.is_sandbox()
+                    else DeliveryStatus.SKIPPED
                 ),
             )
             Notification.objects.bulk_create(

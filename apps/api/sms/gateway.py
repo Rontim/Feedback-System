@@ -30,6 +30,10 @@ def is_enabled() -> bool:
     return get_client() is not None
 
 
+def is_sandbox() -> bool:
+    return settings.AT_USERNAME == "sandbox"
+
+
 @dataclass(frozen=True)
 class SendOutcome:
     phone: str

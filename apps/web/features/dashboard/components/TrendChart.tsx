@@ -67,6 +67,15 @@ export function TrendChart() {
                 />
                 <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} stroke={token.colorTextSecondary} />
                 <Tooltip
+                  contentStyle={{
+                    backgroundColor: token.colorBgElevated,
+                    borderColor: token.colorBorderSecondary,
+                    borderRadius: 8,
+                    color: token.colorText,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  }}
+                  itemStyle={{ color: token.colorText }}
+                  labelStyle={{ color: token.colorTextSecondary }}
                   labelFormatter={(label) => formatShortDate(String(label))}
                   formatter={(value) => (typeof value === "number" ? value.toFixed(2) : value)}
                 />
