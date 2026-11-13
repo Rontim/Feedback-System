@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      deploy_production:
+        description: Deploy the tested main commit to production
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,7 +23,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   deploy-staging:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: test
     permissions:
       contents: read
@@ -36,8 +42,8 @@ jobs:
     secrets: inherit
 
   deploy-production:
-    if: github.ref == 'refs/heads/main'
-    needs: deploy-staging
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_production && github.ref == 'refs/heads/main'
+    needs: test
     permissions:
       contents: read
       id-token: write
